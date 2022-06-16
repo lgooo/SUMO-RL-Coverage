@@ -45,88 +45,29 @@ class SumoGym(gym.Env):
     returns None
     """
 
-    def __init__(self, scenario, choice, delta_t, render_flag=True) -> None:
+    def __init__(self, sumo_config, delta_t, render_flag=True) -> None:
         self.sumoBinary = None
-        self.choice = choice
         self.delta_t = delta_t
         self.vehID = None
         self.egoID = None
         self.ego_state = dict({"x": 0, "y": 0, "lane_x": 0, "lane_y": 0, "vx": 0, "vy": 0, "ax": 0, "ay": 0})
-        # Render the simulation
         self.render(render_flag)
-        # User input scenarios
-        self.scenario = scenario
-        print("Running simulation in", scenario, " mode.")
-        self._cfg = None
+        self.sumo_config = sumo_config
         self.params = SimulationConstants()
 
     def reset(self) -> Observation:
         """
         Function to reset the simulation and return the observation
         """
-        if self.scenario == "urban":
-            all_config_files = []
-            config_dir = './urban_route_files'
-            for file in os.listdir(config_dir):
-                if file.endswith('.sumocfg'):
-                    all_config_files.append(file)
-            if self.choice == 'random':
-                # choose a random sumo config file and run it
-                chosen_file = random.choice(all_config_files)
-            else:
-                # check if the particular file is available
-                # we have numbered the config files from 0
-                # so just check if that number is lesser than/equal to available
-                choice = int(self.choice)
-                if choice <= len(all_config_files):
-                    chosen_file = all_config_files[choice]
-                else:
-                    sys.exit('Chosen file is not available')
-            self._cfg = config_dir + '/' + chosen_file
-        elif self.scenario == "highway":
-            all_config_files = []
-            config_dir = './highway_route_files'
-            for file in os.listdir(config_dir):
-                if file.endswith('.sumocfg'):
-                    all_config_files.append(file)
-            all_config_files = sorted(all_config_files, key=len)
-            if self.choice == 'random':
-                chosen_file = random.choice(all_config_files)
-            else:
-                # check if the particular file is available
-                # we have numbered the config files from 0
-                # so just check if that number is lesser than/equal to available
-                choice = int(self.choice)
-                if choice < len(all_config_files):
-                    chosen_file = all_config_files[choice]
-                else:
-                    sys.exit('Chosen file is not available')
-            self._cfg = config_dir + '/' + "highway-100.sumocfg"
-        elif self.scenario == "custom":
-            self._cfg = input("Please enter your custom .sumocfg filename:\n")
-        else:
-            # default
-            self._cfg = "quickstart.sumocfg"
-        # Start SUMO with the following arguments:
-        # given config file
-        # step length corresponding to the time step
-        # warning during collision
-        # minimum gap of zero
-        # random placement as true
+
         sumoCmd = [
             self.sumoBinary,
-            "-c",
-            self._cfg,
-            "--step-length",
-            str(self.delta_t),
-            "--collision.action",
-            "warn",
-            "--collision.mingap-factor",
-            "0",
-            "--random",
-            "true",
-            "--lateral-resolution",
-            ".1"
+            "-c", self.sumo_config,
+            "--step-length", str(self.delta_t),
+            "--collision.action", "warn",
+            "--collision.mingap-factor", "0",
+            "--random", "true",
+            "--lateral-resolution", ".1",
         ]
         traci.start(sumoCmd)
         # run a single step
@@ -134,11 +75,8 @@ class SumoGym(gym.Env):
         # get the vehicle id list
         self.vehID = traci.vehicle.getIDList()
         # select the ego vehicle ID
-        self.egoID = input(
-            "Please choose your ego vehicle ID (pressing enter only chooses 1st as ego): "
-        )
-        if self.egoID == "":
-            self.egoID = self.vehID[0]
+        self.egoID = self.vehID[0]
+
         # traci.gui.trackVehicle(traci.gui.DEFAULT_VIEW, self.egoID)
         # traci.gui.setZoom(traci.gui.DEFAULT_VIEW, 5000)
         # get observations with respect to the ego-vehicle
@@ -329,7 +267,7 @@ class SumoGym(gym.Env):
 
             dx = -distance * math.cos(radians)
             dy = distance * math.sin(radians)
-        
+
         return dx, dy
 
 

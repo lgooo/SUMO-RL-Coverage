@@ -7,6 +7,7 @@
 
 # SumoGym Testing File
 
+import argparse
 import os
 import math
 from sumo_gym import SumoGym
@@ -82,21 +83,28 @@ def simple_lane_change(obs,
         ay_cmd = ay_max * math.sin((2*math.pi)*curr_lc_time/lc_params.time_for_lane_change)
         if max_ind == 2:
             ay_cmd = -ay_cmd
-        print('ay: ', ay_cmd, ' vy: ', vy, ' y:', y, 'lat_dist', vy*delta_t, 'del_y:', abs((desired_lane + 0.5) * lane_width - y))
+        print('ay: ', ay_cmd, ' vy: ', vy, ' y:', y, 'lat_dist', vy*args.delta_t, 'del_y:', abs((desired_lane + 0.5) * lane_width - y))
         return ay_cmd, lc_bool, desired_lane, curr_lc_time, max_ind
 
 
-# Call SumoGym with the following parameters:
-#   scenario: type of scenario the user would like to run (highway or urban)
-#   choice: which particular scenario number does the user want to run - can be random or a specific numeric choice within quotes
-#   delta_t: simulation time step, a small number will smooth the vehicle's trajectory
-#   render_flag: Whether to render or to suppress
-delta_t = 0.1
-env = SumoGym(scenario='highway', choice='random', delta_t=delta_t, render_flag=True)
+parser = argparse.ArgumentParser(
+    description='SUMO Gym Tester')
+parser.add_argument(
+    '--config',
+    default='quickstart.sumocfg',
+    help='SUMO config file path')
+parser.add_argument(
+    '--delta_t',
+    type=float,
+    default=0.1,
+    help='simulation time step')
+args = parser.parse_args()
+
+env = SumoGym(sumo_config=args.config, delta_t=args.delta_t, render_flag=True)
 # resets the simulation by dropping the vehicles into the environment and returning observations
 obs = env.reset()
 # user can run the simulation for a certain number of steps
-num = input("Please enter simulation time (pressing enter only runs till done): ")
+
 done = False
 # maximum speed of ego vehicle
 max_speed = 40
@@ -111,32 +119,25 @@ lc_bool = False
 curr_lc_time = 0
 max_ind = 1
 lat_dist = 0
-if num == "":
-    iter = 0
-    while done is False:
-        # get the longitudinal acceleration, distance to front vehicle and relative velocity
-        acc_long, del_x, del_v = simple_idm(obs, max_speed, max_acc_long)
-        # get lateral acceleration
-        [acc_lat,
-         lc_bool,
-         desired_lane,
-         curr_lc_time,
-         max_ind] = simple_lane_change(obs=obs,
-                                       sampling_time=delta_t,
-                                       lc_bool=lc_bool,
-                                       curr_lc_time=curr_lc_time,
-                                       desired_lane=desired_lane,
-                                       max_ind=max_ind,
-                                       num_lanes=env.get_num_lanes(),
-                                       lane_width=env.get_lane_width())
-        # The action to be sent to SumoGym is longitudinal and lateral acceleration
-        Action = [acc_long, acc_lat]
-        # print("Iter: ", iter, " Long acc: ", acc_long)
-        obs, reward, done, info = env.step(action=Action)
-        iter += 1
-else:
-    for _ in range(int(num)):
-        acc_long, del_x, del_v  = simple_idm(obs, max_speed, max_acc_long)
-        Action = [acc_long, 20]
-        obs, reward, done, info = env.step(action=Action)
+
+print('hominot', env.get_num_lanes())
+
+while not done:
+    # get the longitudinal acceleration, distance to front vehicle and relative velocity
+    acc_long, del_x, del_v = simple_idm(obs, max_speed, max_acc_long)
+    # get lateral acceleration
+    [acc_lat,
+    lc_bool,
+    desired_lane,
+    curr_lc_time,
+    max_ind] = simple_lane_change(obs=obs,
+                                sampling_time=args.delta_t,
+                                lc_bool=lc_bool,
+                                curr_lc_time=curr_lc_time,
+                                desired_lane=desired_lane,
+                                max_ind=max_ind,
+                                num_lanes=env.get_num_lanes(),
+                                lane_width=env.get_lane_width())
+    Action = [acc_long, acc_lat]
+    obs, reward, done, info = env.step(action=Action)
 env.close()
