@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2022-06-15 00:31:39 by Eclipse SUMO netedit Version 1.12.0
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="t_0" vClass="authority" emissionClass="Zero/default"/>
+    <route id="r_0" edges="1"/>
+    <vehicle id="v_0" depart="0.00" departPos="70" departLane="1" departSpeed="30" route="r_0"/>
+    <vehicle id="v_1" depart="0.00" departPos="140" departLane="1" departSpeed="26" route="r_0"/>
+    <vehicle id="v_2" depart="0.00" departPos="0" departLane="1" departSpeed="27" route="r_0"/>
+    <vehicle id="v_3" depart="0.00" departPos="100" departLane="0" departSpeed="24" route="r_0"/>
+    <vehicle id="v_4" depart="0.00" departPos="50" departLane="0" departSpeed="28" route="r_0"/>
+    <vehicle id="v_5" depart="0.00" departPos="110" departLane="2" departSpeed="31" route="r_0"/>
+    <vehicle id="v_6" depart="0.00" departPos="40" departLane="2" departSpeed="29" route="r_0"/>
+</routes>
