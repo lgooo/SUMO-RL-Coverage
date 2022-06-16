@@ -91,7 +91,7 @@ parser = argparse.ArgumentParser(
     description='SUMO Gym Tester')
 parser.add_argument(
     '--config',
-    default='quickstart.sumocfg',
+    default='sumo_configs/quickstart.sumocfg',
     help='SUMO config file path')
 parser.add_argument(
     '--delta_t',
@@ -119,8 +119,6 @@ lc_bool = False
 curr_lc_time = 0
 max_ind = 1
 lat_dist = 0
-
-print('hominot', env.get_num_lanes())
 
 while not done:
     # get the longitudinal acceleration, distance to front vehicle and relative velocity
