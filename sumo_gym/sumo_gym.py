@@ -26,7 +26,6 @@ import traci.constants as tc
 from typing import List
 import os
 import random
-from params import SimulationConstants
 
 Observation = np.ndarray
 Action = np.ndarray
@@ -53,7 +52,6 @@ class SumoGym(gym.Env):
         self.ego_state = dict({"x": 0, "y": 0, "lane_x": 0, "lane_y": 0, "vx": 0, "vy": 0, "ax": 0, "ay": 0})
         self.render(render_flag)
         self.sumo_config = sumo_config
-        self.params = SimulationConstants()
 
     def reset(self) -> Observation:
         """
@@ -214,14 +212,14 @@ class SumoGym(gym.Env):
         ego_features = self._get_features(vehID)
 
         neighbor_ids = self._get_neighbor_ids(vehID)
-        obs = np.ndarray((len(neighbor_ids)+1, self.params.num_features))
+        obs = np.ndarray((len(neighbor_ids)+1, 10))
         obs[0, :] = ego_features
         for i, neighbor_id in enumerate(neighbor_ids):
             if neighbor_id != "":
                 features = self._get_features(neighbor_id)
                 obs[i + 1, :] = features
             else:
-                obs[i + 1, :] = np.zeros((self.params.num_features, ))
+                obs[i + 1, :] = np.zeros((10, ))
         return obs
 
     def long_lat_pos_cal(self, angle, acc_y, distance, heading):
