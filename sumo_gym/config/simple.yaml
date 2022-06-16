@@ -1,2 +1,3 @@
 env:
     sumo_config: sumo/simple.sumocfg
+    num_vehicles: 20

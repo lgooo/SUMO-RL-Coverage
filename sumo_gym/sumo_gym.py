@@ -25,7 +25,7 @@ from shapely.geometry import LineString, Point
 import traci.constants as tc
 from typing import List
 import os
-import random
+import numpy as np
 
 Observation = np.ndarray
 Action = np.ndarray
@@ -36,22 +36,21 @@ class SumoGym(gym.Env):
     SUMO Environment for testing AV pipeline
 
     Uses OpenAI Gym
-    @Params: scenario: choosing scenario type - "highway", "urban", "custom" or default
-    @Params: choice: choosing particular scenario number of scenario type or "random" - chooses random scenario number
     @Params: delta_t: time-step of running simulation
     @Params: render_flag: whether to utilize SUMO-GUI or SUMO
 
     returns None
     """
 
-    def __init__(self, sumo_config, delta_t, render_flag=True) -> None:
+    def __init__(self, config, delta_t, render_flag=True) -> None:
         self.sumoBinary = None
         self.delta_t = delta_t
-        self.vehID = None
-        self.egoID = None
+        self.vehID = []
+        self.egoID = 'ego'
         self.ego_state = dict({"x": 0, "y": 0, "lane_x": 0, "lane_y": 0, "vx": 0, "vy": 0, "ax": 0, "ay": 0})
         self.render(render_flag)
-        self.sumo_config = sumo_config
+        self.config = config
+        self.sumo_config = config['env']['sumo_config']
 
     def reset(self) -> Observation:
         """
@@ -68,12 +67,15 @@ class SumoGym(gym.Env):
             "--lateral-resolution", ".1",
         ]
         traci.start(sumoCmd)
-        # run a single step
-        traci.simulationStep()
-        # get the vehicle id list
-        self.vehID = traci.vehicle.getIDList()
-        # select the ego vehicle ID
-        self.egoID = self.vehID[0]
+
+        self._init()
+
+        # simulate until ego appears
+        while 'ego' not in self.vehID:
+            traci.simulationStep()
+            self.vehID = traci.vehicle.getIDList()
+
+        traci.vehicle.highlight(self.egoID)
 
         # traci.gui.trackVehicle(traci.gui.DEFAULT_VIEW, self.egoID)
         # traci.gui.setZoom(traci.gui.DEFAULT_VIEW, 5000)
@@ -102,6 +104,27 @@ class SumoGym(gym.Env):
         self.ego_line = self.get_ego_shape_info()
         obs = self._compute_observations(self.egoID)
         return obs
+
+    def _init(self):
+        num_vehicles = self.config['env'].get('num_vehicles', 5)
+        vehicle_time_gap = self.config['env'].get('vehicle_time_gap', 1.0)
+        routes = traci.route.getIDList()
+        lanes = traci.lane.getIDList()
+        vehicles = traci.vehicle.getIDList()
+        speed_mean = self.config['env'].get('vehicle_speed_mean', 25)
+        speed_stdev = self.config['env'].get('vehicle_speed_stdev', 2)
+
+        start_time = np.random.permutation(num_vehicles) * vehicle_time_gap
+
+        for i in range(num_vehicles):
+            traci.vehicle.add(
+                vehID=f'gen_v_{i}' if i > 0 else 'ego',
+                routeID='', # randomly chosen
+                departSpeed=np.random.normal(speed_mean, speed_stdev),
+                depart=start_time[i],
+                departPos='0',
+                departLane='random',
+            )
 
     def _get_features(self, vehID) -> np.ndarray:
         """
