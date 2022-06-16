@@ -1,0 +1,2 @@
+env:
+    sumo_config: sumo/simple.sumocfg
