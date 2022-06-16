@@ -4,7 +4,6 @@
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vType id="t_0" vClass="authority" emissionClass="Zero/default"/>
     <route id="r_0" edges="1"/>
     <vehicle id="v_0" depart="0.00" departPos="70" departLane="1" departSpeed="30" route="r_0"/>
     <vehicle id="v_1" depart="0.00" departPos="140" departLane="1" departSpeed="26" route="r_0"/>
