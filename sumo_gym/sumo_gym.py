@@ -4,6 +4,7 @@
 import os
 import sys
 from util import SumoUtil
+from util import Sumo
 
 SumoUtil.add_sumo_path()
 
@@ -36,39 +37,18 @@ class SumoGym(gym.Env):
     """
 
     def __init__(self, config, delta_t, render_flag=True) -> None:
-        self.sumoBinary = SumoUtil.get_sumo_binary(render_flag)
         self.delta_t = delta_t
         self.vehID = []
         self.egoID = 'ego'
         self.ego_state = dict({"x": 0, "y": 0, "lane_x": 0, "lane_y": 0, "vx": 0, "vy": 0, "ax": 0, "ay": 0})
-        #self.render(render_flag)
         self.config = config
-        self.sumo_config = config['env']['sumo_config']
 
     def reset(self) -> Observation:
         """
         Function to reset the simulation and return the observation
         """
 
-        sumoCmd = [
-            self.sumoBinary,
-            "-c", self.sumo_config,
-            "--step-length", str(self.delta_t),
-            "--collision.action", "warn",
-            "--collision.mingap-factor", "0",
-            "--random", "true",
-            "--lateral-resolution", ".1",
-        ]
-        traci.start(sumoCmd)
-
-        self._init()
-
-        # simulate until ego appears
-        while 'ego' not in self.vehID:
-            traci.simulationStep()
-            self.vehID = traci.vehicle.getIDList()
-
-        traci.vehicle.highlight(self.egoID)
+        sumo = Sumo(self.config, self.delta_t)
 
         # traci.gui.trackVehicle(traci.gui.DEFAULT_VIEW, self.egoID)
         # traci.gui.setZoom(traci.gui.DEFAULT_VIEW, 5000)
@@ -97,27 +77,6 @@ class SumoGym(gym.Env):
         self.ego_line = self.get_ego_shape_info()
         obs = self._compute_observations(self.egoID)
         return obs
-
-    def _init(self):
-        num_vehicles = self.config['env'].get('num_vehicles', 5)
-        vehicle_time_gap = self.config['env'].get('vehicle_time_gap', 1.0)
-        routes = traci.route.getIDList()
-        lanes = traci.lane.getIDList()
-        vehicles = traci.vehicle.getIDList()
-        speed_mean = self.config['env'].get('vehicle_speed_mean', 25)
-        speed_stdev = self.config['env'].get('vehicle_speed_stdev', 2)
-
-        start_time = np.random.permutation(num_vehicles) * vehicle_time_gap
-
-        for i in range(num_vehicles):
-            traci.vehicle.add(
-                vehID=f'gen_v_{i}' if i > 0 else 'ego',
-                routeID='', # randomly chosen
-                departSpeed=np.random.normal(speed_mean, speed_stdev),
-                depart=start_time[i],
-                departPos='0',
-                departLane='random',
-            )
 
     def _get_features(self, vehID) -> np.ndarray:
         """
