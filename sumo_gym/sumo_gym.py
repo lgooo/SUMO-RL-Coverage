@@ -3,10 +3,10 @@
 
 import os
 import sys
-from util import SumoUtil
+from util import add_sumo_path
 from util import Sumo
 
-SumoUtil.add_sumo_path()
+add_sumo_path()
 
 import gym
 import math

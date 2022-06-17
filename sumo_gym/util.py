@@ -2,14 +2,13 @@ import numpy as np
 import os
 import sys
 
-class SumoUtil:
-    def add_sumo_path():
-        if "SUMO_HOME" in os.environ:
-            sumo_path = os.path.join(os.environ["SUMO_HOME"], "tools")
-            if sumo_path not in sys.path:
-                sys.path.append(sumo_path)
-        else:
-            sys.exit("please declare environment variable 'SUMO_HOME'")
+def add_sumo_path():
+    if "SUMO_HOME" in os.environ:
+        sumo_path = os.path.join(os.environ["SUMO_HOME"], "tools")
+        if sumo_path not in sys.path:
+            sys.path.append(sumo_path)
+    else:
+        sys.exit("please declare environment variable 'SUMO_HOME'")
 
 
 class Sumo:
@@ -21,7 +20,7 @@ class Sumo:
 
         sumo_path = os.path.join(os.environ["SUMO_HOME"], "tools")
         if sumo_path not in sys.path:
-            sys.path.append(tools)
+            sys.path.append(sumo_path)
         bin_path = os.path.join(os.environ["SUMO_HOME"], "bin")
         if bin_path not in sys.path:
             sys.path.append(bin_path)
@@ -57,7 +56,7 @@ class Sumo:
         traci.vehicle.highlight('ego')
 
     def _init(self):
-        num_vehicles = self.config['env'].get('num_vehicles', 5)
+        num_vehicles = self.config['env'].get('num_vehicles', 0)
         vehicle_time_gap = self.config['env'].get('vehicle_time_gap', 1.0)
         routes = self.sumo_handle.route.getIDList()
         lanes = self.sumo_handle.lane.getIDList()
@@ -76,3 +75,16 @@ class Sumo:
                 departPos='0',
                 departLane='random',
             )
+
+        for id, data in self.config['env'].get('vehicle_list', {}).items():
+            self.sumo_handle.vehicle.add(
+                vehID=id,
+                routeID='', # randomly chosen
+                departSpeed=np.random.normal(speed_mean, speed_stdev),
+                depart=data.get('depart_time', 0),
+                departPos=data['position'],
+                departLane=data.get('lane', 'random'),
+            )
+
+    def close(self):
+        self.sumo_handle.close()
