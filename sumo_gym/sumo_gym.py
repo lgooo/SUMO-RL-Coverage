@@ -3,15 +3,9 @@
 
 import os
 import sys
+from util import SumoUtil
 
-# check if SUMO_HOME exists in environment variable
-# if not, then need to declare the variable before proceeding
-# makes it OS-agnostic
-if "SUMO_HOME" in os.environ:
-    tools = os.path.join(os.environ["SUMO_HOME"], "tools")
-    sys.path.append(tools)
-else:
-    sys.exit("please declare environment variable 'SUMO_HOME'")
+SumoUtil.add_sumo_path()
 
 import gym
 import math
@@ -20,7 +14,6 @@ import ast
 import numpy as np
 import pandas as pd
 from typing import Tuple
-from sumolib import checkBinary
 from shapely.geometry import LineString, Point
 import traci.constants as tc
 from typing import List
@@ -43,12 +36,12 @@ class SumoGym(gym.Env):
     """
 
     def __init__(self, config, delta_t, render_flag=True) -> None:
-        self.sumoBinary = None
+        self.sumoBinary = SumoUtil.get_sumo_binary(render_flag)
         self.delta_t = delta_t
         self.vehID = []
         self.egoID = 'ego'
         self.ego_state = dict({"x": 0, "y": 0, "lane_x": 0, "lane_y": 0, "vx": 0, "vy": 0, "ax": 0, "ay": 0})
-        self.render(render_flag)
+        #self.render(render_flag)
         self.config = config
         self.sumo_config = config['env']['sumo_config']
 
@@ -399,24 +392,6 @@ class SumoGym(gym.Env):
         reward = self.reward(action)
 
         return obs, reward, sim_check, info
-
-    def render(self, flag) -> None:
-        """
-        Function to render SUMO environment - essentially choosing SUMO-GUI or SUMO
-        """
-
-        # check the path of sumo/sumo-gui
-        if "SUMO_HOME" in os.environ:
-            bin_path = os.path.join(os.environ["SUMO_HOME"], "bin")
-            sys.path.append(bin_path)
-        else:
-            sys.exit("please declare environment variable 'SUMO_HOME'")
-
-        # using sumo or sumo-gui
-        if flag:
-            self.sumoBinary = checkBinary("sumo-gui")
-        else:
-            self.sumoBinary = checkBinary("sumo")
 
     # Reward will not be implemented, user has the option
     def reward(self, action: Action) -> float:
