@@ -40,7 +40,7 @@ class Sumo:
             "--step-length", str(delta_t),
             "--collision.action", "warn",
             "--collision.mingap-factor", "0",
-            "--random", "true",
+            "--random", "false",
             "--lateral-resolution", ".1",
         ]
         traci.start(sumoCmd)
@@ -56,7 +56,7 @@ class Sumo:
         traci.vehicle.highlight('ego')
 
     def _init(self):
-        num_vehicles = self.config['env'].get('num_vehicles', 0)
+        num_random_vehicles = self.config['env'].get('num_random_vehicles', 0)
         vehicle_time_gap = self.config['env'].get('vehicle_time_gap', 1.0)
         routes = self.sumo_handle.route.getIDList()
         lanes = self.sumo_handle.lane.getIDList()
@@ -64,19 +64,20 @@ class Sumo:
         speed_mean = self.config['env'].get('vehicle_speed_mean', 25)
         speed_stdev = self.config['env'].get('vehicle_speed_stdev', 2)
 
-        start_time = np.random.permutation(num_vehicles) * vehicle_time_gap
+        start_time = np.random.permutation(num_random_vehicles) * vehicle_time_gap
 
-        for i in range(num_vehicles):
-            self.sumo_handle.vehicle.add(
-                vehID=f'gen_v_{i}' if i > 0 else 'ego',
-                routeID='', # randomly chosen
-                departSpeed=np.random.normal(speed_mean, speed_stdev),
-                depart=start_time[i],
-                departPos='0',
-                departLane='random',
-            )
+        vehicle_data = self.config['env'].get('vehicle_list', {})
+        for i in range(num_random_vehicles):
+            veh_id = f'gen_v_{i}' if 'ego' in vehicle_data else 'ego'
+            vehicle_data[veh_id] = {
+                'depart_time': start_time[i],
+                'position': 0,
+                'lane': 'random',
+            }
+        assert 'ego' in vehicle_data
 
-        for id, data in self.config['env'].get('vehicle_list', {}).items():
+        # order of position matters for some reason.
+        for id, data in sorted(vehicle_data.items(), key=lambda x: x[1]['position'], reverse=True):
             self.sumo_handle.vehicle.add(
                 vehID=id,
                 routeID='', # randomly chosen
@@ -85,17 +86,24 @@ class Sumo:
                 departPos=data['position'],
                 departLane=data.get('lane', 'random'),
             )
+            lane_ids = self.sumo_handle.lane.getIDList()
+            # hack: force insertion by calling moveTo()
+            self.sumo_handle.vehicle.moveTo(
+                id, laneID=lane_ids[data['lane']], pos=data['position'])
 
     def get_neighbor_ids(self, vehID):
         """
         Function to extract the ids of the neighbors of a given vehicle
         """
+        neighbor_ids = []
+
         rightFollower = self.sumo_handle.vehicle.getRightFollowers(vehID)
         rightLeader = self.sumo_handle.vehicle.getRightLeaders(vehID)
         leftFollower = self.sumo_handle.vehicle.getLeftFollowers(vehID)
         leftLeader = self.sumo_handle.vehicle.getLeftLeaders(vehID)
-        leader = self.sumo_handle.vehicle.getLeader(vehID)
-        follower = self.sumo_handle.vehicle.getFollower(vehID)
+        leader = self.sumo_handle.vehicle.getLeader(vehID, dist=50)
+        follower = self.sumo_handle.vehicle.getFollower(vehID, dist=50)
+
         if len(leftLeader) != 0:
             neighbor_ids.append(leftLeader[0][0])
         else:
@@ -121,5 +129,9 @@ class Sumo:
         else:
             neighbor_ids.append("")
         return neighbor_ids
+
+    def step(self):
+        self.sumo_handle.simulationStep()
+
     def close(self):
         self.sumo_handle.close()
