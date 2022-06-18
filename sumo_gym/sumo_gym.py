@@ -50,33 +50,27 @@ class SumoGym(gym.Env):
 
         sumo = Sumo(self.config, self.delta_t)
 
-        # traci.gui.trackVehicle(traci.gui.DEFAULT_VIEW, self.egoID)
-        # traci.gui.setZoom(traci.gui.DEFAULT_VIEW, 5000)
-        # get observations with respect to the ego-vehicle
-        curr_pos = traci.vehicle.getPosition(self.egoID)
-        x, y = curr_pos[0], curr_pos[1]
-        lane_x, lane_y = traci.vehicle.getLanePosition(self.egoID), traci.vehicle.getLateralLanePosition(self.egoID)
+        x,  y = traci.vehicle.getPosition(self.egoID)
+
         lane_id = traci.vehicle.getLaneID(self.egoID)
-        if lane_id == "":
-            return None
-        else:
-            lane_index = traci.vehicle.getLaneIndex(self.egoID)
-            lane_width = traci.lane.getWidth(lane_id)
-        lane_y = lane_width * (lane_index + 0.5) + lane_y
-        vx = traci.vehicle.getSpeed(self.egoID)
-        self.ego_state['x'], self.ego_state['y'] = x, y
-        self.ego_state['lane_x'], self.ego_state['lane_y'] = lane_x, lane_y
-        self.ego_state['vx'] = vx
-        self.ego_state['ax'] = traci.vehicle.getAcceleration(self.egoID)
-        veh_loc = Point(x, y)
-        # closest point on the line to the location of vehicle
-        # veh_loc = line.interpolate(line.project(veh_loc))
-        # new_x = veh_loc.coords[0][0]
-        # new_y = veh_loc.coords[0][1]
-        # delta_distance = .01
+        assert lane_id != ''
+        lane_index = traci.vehicle.getLaneIndex(self.egoID)
+        lane_width = traci.lane.getWidth(lane_id)
+        lane_y = lane_width * (lane_index + 0.5) + traci.vehicle.getLateralLanePosition(self.egoID)
+
+        self.ego_state = {
+            'x': x,
+            'y': y,
+            'lane_x': traci.vehicle.getLanePosition(self.egoID),
+            'lane_y': lane_y,
+            'vx': traci.vehicle.getSpeed(self.egoID),
+            'vy': 0,
+            'ax': traci.vehicle.getAcceleration(self.egoID),
+            'ay': 0,
+        }
         self.ego_line = self.get_ego_shape_info()
-        obs = self._compute_observations(self.egoID)
-        return obs
+
+        return self._compute_observations()
 
     def _get_features(self, vehID) -> np.ndarray:
         """
@@ -95,11 +89,9 @@ class SumoGym(gym.Env):
             # right is negative and left is positiive
             y = traci.vehicle.getLateralLanePosition(vehID)
             lane_id = traci.vehicle.getLaneID(vehID)
-            if lane_id == "":
-                return None
-            else:
-                lane_index = traci.vehicle.getLaneIndex(vehID)
-                lane_width = traci.lane.getWidth(lane_id)
+            assert lane_id != ''
+            lane_index = traci.vehicle.getLaneIndex(vehID)
+            lane_width = traci.lane.getWidth(lane_id)
             y = lane_width * (lane_index + 0.5) + y
             vx = traci.vehicle.getSpeed(vehID)
             vy = traci.vehicle.getLateralSpeed(vehID)
@@ -166,7 +158,7 @@ class SumoGym(gym.Env):
 
         return distance_to_signal, signal_status, remaining_time
 
-    def _compute_observations(self, vehID) -> Observation:
+    def _compute_observations(self) -> Observation:
         """
         Function to compute the observation space
         Returns: A 7x10 array of Observations
@@ -184,6 +176,7 @@ class SumoGym(gym.Env):
         8 - current signal status, 0: green, 1: red, 2: yellow
         9 - remaning time of the current signal status in seconds
         """
+        vehID = self.egoID
         ego_features = self._get_features(vehID)
 
         neighbor_ids = self._get_neighbor_ids(vehID)
@@ -342,7 +335,7 @@ class SumoGym(gym.Env):
             traci.vehicle.setSpeedMode(self.egoID, 0)
             traci.vehicle.setSpeed(self.egoID, vx)
             self.ego_line = line
-            obs = self._compute_observations(self.egoID)
+            obs = self._compute_observations()
             self.ego_state['x'], self.ego_state['y'] = new_x, new_y
             self.ego_state['vx'], self.ego_state['vy'] = vx, vy
             self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
