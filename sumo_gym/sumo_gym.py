@@ -42,13 +42,14 @@ class SumoGym(gym.Env):
         self.egoID = 'ego'
         self.ego_state = dict({"x": 0, "y": 0, "lane_x": 0, "lane_y": 0, "vx": 0, "vy": 0, "ax": 0, "ay": 0})
         self.config = config
+        self.sumo = None
 
     def reset(self) -> Observation:
         """
         Function to reset the simulation and return the observation
         """
 
-        sumo = Sumo(self.config, self.delta_t)
+        self.sumo = Sumo(self.config, self.delta_t)
 
         x,  y = traci.vehicle.getPosition(self.egoID)
 
@@ -101,43 +102,6 @@ class SumoGym(gym.Env):
 
         return features
 
-    def _get_neighbor_ids(self, vehID) -> List:
-        """
-        Function to extract the ids of the neighbors of a given vehicle
-        """
-        neighbor_ids = []
-        rightFollower = traci.vehicle.getRightFollowers(vehID)
-        rightLeader = traci.vehicle.getRightLeaders(vehID)
-        leftFollower = traci.vehicle.getLeftFollowers(vehID)
-        leftLeader = traci.vehicle.getLeftLeaders(vehID)
-        leader = traci.vehicle.getLeader(vehID)
-        follower = traci.vehicle.getFollower(vehID)
-        if len(leftLeader) != 0:
-            neighbor_ids.append(leftLeader[0][0])
-        else:
-            neighbor_ids.append("")
-        if leader is not None:
-            neighbor_ids.append(leader[0])
-        else:
-            neighbor_ids.append("")
-        if len(rightLeader) != 0:
-            neighbor_ids.append(rightLeader[0][0])
-        else:
-            neighbor_ids.append("")
-        if len(leftFollower) != 0:
-            neighbor_ids.append(leftFollower[0][0])
-        else:
-            neighbor_ids.append("")
-        if follower is not None and follower[0] != "":
-            neighbor_ids.append(follower[0])
-        else:
-            neighbor_ids.append("")
-        if len(rightFollower) != 0:
-            neighbor_ids.append(rightFollower[0][0])
-        else:
-            neighbor_ids.append("")
-        return neighbor_ids
-
     def _get_upcoming_signal_information(self, vehID):
 
         signal_information = traci.vehicle.getNextTLS(vehID)
@@ -179,7 +143,7 @@ class SumoGym(gym.Env):
         vehID = self.egoID
         ego_features = self._get_features(vehID)
 
-        neighbor_ids = self._get_neighbor_ids(vehID)
+        neighbor_ids = self.sumo.get_neighbor_ids(vehID)
         obs = np.ndarray((len(neighbor_ids)+1, 10))
         obs[0, :] = ego_features
         for i, neighbor_id in enumerate(neighbor_ids):

@@ -86,5 +86,40 @@ class Sumo:
                 departLane=data.get('lane', 'random'),
             )
 
+    def get_neighbor_ids(self, vehID):
+        """
+        Function to extract the ids of the neighbors of a given vehicle
+        """
+        rightFollower = self.sumo_handle.vehicle.getRightFollowers(vehID)
+        rightLeader = self.sumo_handle.vehicle.getRightLeaders(vehID)
+        leftFollower = self.sumo_handle.vehicle.getLeftFollowers(vehID)
+        leftLeader = self.sumo_handle.vehicle.getLeftLeaders(vehID)
+        leader = self.sumo_handle.vehicle.getLeader(vehID)
+        follower = self.sumo_handle.vehicle.getFollower(vehID)
+        if len(leftLeader) != 0:
+            neighbor_ids.append(leftLeader[0][0])
+        else:
+            neighbor_ids.append("")
+        if leader is not None:
+            neighbor_ids.append(leader[0])
+        else:
+            neighbor_ids.append("")
+        if len(rightLeader) != 0:
+            neighbor_ids.append(rightLeader[0][0])
+        else:
+            neighbor_ids.append("")
+        if len(leftFollower) != 0:
+            neighbor_ids.append(leftFollower[0][0])
+        else:
+            neighbor_ids.append("")
+        if follower is not None and follower[0] != "":
+            neighbor_ids.append(follower[0])
+        else:
+            neighbor_ids.append("")
+        if len(rightFollower) != 0:
+            neighbor_ids.append(rightFollower[0][0])
+        else:
+            neighbor_ids.append("")
+        return neighbor_ids
     def close(self):
         self.sumo_handle.close()
