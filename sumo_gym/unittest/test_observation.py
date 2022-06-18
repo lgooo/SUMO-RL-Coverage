@@ -11,14 +11,12 @@ from util import Sumo
 
 class TestObservation(unittest.TestCase):
     config1 = {
-        'env': {
-            'sumo_config': '../sumo/simple.sumocfg',
-        }
+        'sumo_config': '../sumo/simple.sumocfg',
     }
 
     def test_neighbors(self):
         conf = self.config1.copy()
-        conf['env']['vehicle_list'] = {
+        conf['vehicle_list'] = {
             'ego': {'position': 100, 'lane': 1},
             'v1': {'position': 150, 'lane': 1},
             'v2': {'position': 150, 'lane': 0},
