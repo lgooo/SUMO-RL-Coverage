@@ -5,6 +5,7 @@ import os
 import sys
 from util import add_sumo_path
 from util import Sumo
+from util import long_lat_pos_cal
 
 add_sumo_path()
 
@@ -154,53 +155,6 @@ class SumoGym(gym.Env):
                 obs[i + 1, :] = np.zeros((10, ))
         return obs
 
-    def long_lat_pos_cal(self, angle, acc_y, distance, heading):
-        """
-        Function to compute the global SUMO position based on ego vehicle states
-        """
-        if angle <= 90:
-            alpha = 90 - angle
-            # consider steering maneuver
-            if acc_y >= 0:
-                radians = math.radians(alpha) - heading
-            else:
-                radians = math.radians(alpha) + heading
-            dx = distance * math.cos(radians)
-            dy = distance * math.sin(radians)
-        elif 90 < angle <= 180:
-            alpha = angle - 90
-            # consider steering maneuver
-            if acc_y >= 0:
-                radians = math.radians(alpha) - heading
-            else:
-                radians = math.radians(alpha) + heading
-
-            dx = distance * math.cos(radians)
-            dy = -distance * math.sin(radians)
-        elif 180 < angle <= 270:
-            alpha = 270 - angle
-            # consider steering maneuver
-            if acc_y >= 0:
-                radians = math.radians(alpha) + heading
-            else:
-                radians = math.radians(alpha) - heading
-
-            dx = -distance * math.cos(radians)
-            dy = -distance * math.sin(radians)
-        else:
-            alpha = angle - 270
-            # consider steering maneuver
-            if acc_y >= 0:
-                radians = math.radians(alpha) + heading
-            else:
-                radians = math.radians(alpha) - heading
-
-            dx = -distance * math.cos(radians)
-            dy = distance * math.sin(radians)
-
-        return dx, dy
-
-
     def update_state(self, action: Action) -> Tuple[bool, float, float, float, LineString, float, float, float, float, float, float]:
         """
         Function to update the state of the ego vehicle based on the action (Accleration)
@@ -252,11 +206,11 @@ class SumoGym(gym.Env):
             else:
                 self.ego_line = self.get_ego_shape_info()
                 line = self.ego_line
-                dx, dy = self.long_lat_pos_cal(angle, acc_y, distance, heading)
+                dx, dy = long_lat_pos_cal(angle, acc_y, distance, heading)
         else:
-            self.ego_line = self.get_ego_shape_info()
+            self.ego_line = get_ego_shape_info()
             line = self.ego_line
-            dx, dy = self.long_lat_pos_cal(angle, acc_y, distance, heading)
+            dx, dy = long_lat_pos_cal(angle, acc_y, distance, heading)
 
         return in_road, dx, dy, speed, line, vx, vy, acc_x, acc_y, long_distance, lat_distance
 
