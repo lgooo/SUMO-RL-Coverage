@@ -26,7 +26,7 @@ with open(args.config, 'r') as f:
     conf = yaml.safe_load(f)
 
 env = SumoGym(
-    config=conf,
+    config=conf['env'],
     delta_t=args.delta_t,
     render_flag=True,
 )

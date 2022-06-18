@@ -83,7 +83,7 @@ class Sumo:
             sumo_binary = checkBinary("sumo")
         sumoCmd = [
             sumo_binary,
-            "-c", config['env']['sumo_config'],
+            "-c", config['sumo_config'],
             "--step-length", str(delta_t),
             "--collision.action", "warn",
             "--collision.mingap-factor", "0",
@@ -103,17 +103,17 @@ class Sumo:
         traci.vehicle.highlight('ego')
 
     def _init(self):
-        num_random_vehicles = self.config['env'].get('num_random_vehicles', 0)
-        vehicle_time_gap = self.config['env'].get('vehicle_time_gap', 1.0)
+        num_random_vehicles = self.config.get('num_random_vehicles', 0)
+        vehicle_time_gap = self.config.get('vehicle_time_gap', 1.0)
         routes = self.sumo_handle.route.getIDList()
         lanes = self.sumo_handle.lane.getIDList()
         vehicles = self.sumo_handle.vehicle.getIDList()
-        speed_mean = self.config['env'].get('vehicle_speed_mean', 25)
-        speed_stdev = self.config['env'].get('vehicle_speed_stdev', 2)
+        speed_mean = self.config.get('vehicle_speed_mean', 25)
+        speed_stdev = self.config.get('vehicle_speed_stdev', 2)
 
         start_time = np.random.permutation(num_random_vehicles) * vehicle_time_gap
 
-        vehicle_data = self.config['env'].get('vehicle_list', {})
+        vehicle_data = self.config.get('vehicle_list', {})
         for i in range(num_random_vehicles):
             veh_id = f'gen_v_{i}' if 'ego' in vehicle_data else 'ego'
             vehicle_data[veh_id] = {

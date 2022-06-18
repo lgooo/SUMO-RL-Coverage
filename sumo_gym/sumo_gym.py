@@ -228,40 +228,38 @@ class SumoGym(gym.Env):
         lane = traci.vehicle.getLaneIndex(self.egoID)
         lane_id = traci.vehicle.getLaneID(self.egoID)
 
-        sim_check = False
         obs = []
         info = {}
         if in_road == False or lane_id == "":
             info["debug"] = "Ego-vehicle is out of network"
-            sim_check = True
-        elif self.egoID in traci.simulation.getCollidingVehiclesIDList():
+            return obs, 0, True, info
+        if self.egoID in traci.simulation.getCollidingVehiclesIDList():
             info["debug"] = "A crash happened to the Ego-vehicle"
-            sim_check = True
+            return obs, self.config['reward']['crash'], True, info
 
-        else:
-            self.ego_state['lane_x'] += long_dist
-            self.ego_state['lane_y'] += lat_dist
-            # print(self.ego_state['lane_y'])
-            new_x = self.ego_state['x'] + dx
-            new_y = self.ego_state['y'] + dy
-            # ego-vehicle is mapped to the exact position in the network by setting keepRoute to 2
-            traci.vehicle.moveToXY(
-                self.egoID, edge, lane, new_x, new_y,
-                tc.INVALID_DOUBLE_VALUE, 2
-            )
-            # remove control from SUMO, may result in very large speed
-            traci.vehicle.setSpeedMode(self.egoID, 0)
-            traci.vehicle.setSpeed(self.egoID, vx)
-            self.ego_line = line
-            obs = self._compute_observations()
-            self.ego_state['x'], self.ego_state['y'] = new_x, new_y
-            self.ego_state['vx'], self.ego_state['vy'] = vx, vy
-            self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
-            info["debug"] = [lat_dist, self.ego_state['lane_y']]
-            traci.simulationStep()
+        self.ego_state['lane_x'] += long_dist
+        self.ego_state['lane_y'] += lat_dist
+        # print(self.ego_state['lane_y'])
+        new_x = self.ego_state['x'] + dx
+        new_y = self.ego_state['y'] + dy
+        # ego-vehicle is mapped to the exact position in the network by setting keepRoute to 2
+        traci.vehicle.moveToXY(
+            self.egoID, edge, lane, new_x, new_y,
+            tc.INVALID_DOUBLE_VALUE, 2
+        )
+        # remove control from SUMO, may result in very large speed
+        traci.vehicle.setSpeedMode(self.egoID, 0)
+        traci.vehicle.setSpeed(self.egoID, vx)
+        self.ego_line = line
+        obs = self._compute_observations()
+        self.ego_state['x'], self.ego_state['y'] = new_x, new_y
+        self.ego_state['vx'], self.ego_state['vy'] = vx, vy
+        self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
+        info["debug"] = [lat_dist, self.ego_state['lane_y']]
+        traci.simulationStep()
         reward = self.reward(action)
 
-        return obs, reward, sim_check, info
+        return obs, reward, False, info
 
     # Reward will not be implemented, user has the option
     def reward(self, action: Action) -> float:
