@@ -11,6 +11,7 @@ add_sumo_path()
 
 import gym
 import math
+import constants as C
 import traci
 import ast
 import numpy as np
@@ -40,7 +41,7 @@ class SumoGym(gym.Env):
     def __init__(self, config, delta_t, render_flag=True) -> None:
         self.delta_t = delta_t
         self.vehID = []
-        self.egoID = 'ego'
+        self.egoID = C.EGO_ID
         self.ego_state = dict({"x": 0, "y": 0, "lane_x": 0, "lane_y": 0, "vx": 0, "vy": 0, "ax": 0, "ay": 0})
         self.config = config
         self.sumo = None

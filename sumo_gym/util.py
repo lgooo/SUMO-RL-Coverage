@@ -1,3 +1,4 @@
+import constants as C
 import numpy as np
 import os
 import sys
@@ -96,11 +97,11 @@ class Sumo:
 
         # simulate until ego appears
         vehicle_ids = []
-        while 'ego' not in vehicle_ids:
+        while C.EGO_ID not in vehicle_ids:
             traci.simulationStep()
             vehicle_ids = traci.vehicle.getIDList()
 
-        traci.vehicle.highlight('ego')
+        traci.vehicle.highlight(C.EGO_ID)
 
     def _init(self):
         num_random_vehicles = self.config.get('num_random_vehicles', 0)
@@ -115,13 +116,13 @@ class Sumo:
 
         vehicle_data = self.config.get('vehicle_list', {})
         for i in range(num_random_vehicles):
-            veh_id = f'gen_v_{i}' if 'ego' in vehicle_data else 'ego'
+            veh_id = f'gen_v_{i}' if C.EGO_ID in vehicle_data else C.EGO_ID
             vehicle_data[veh_id] = {
                 'depart_time': start_time[i],
                 'position': 0,
                 'lane': 'random',
             }
-        assert 'ego' in vehicle_data
+        assert C.EGO_ID in vehicle_data
 
         # order of position matters for some reason.
         for id, data in sorted(vehicle_data.items(), key=lambda x: x[1]['position'], reverse=True):
