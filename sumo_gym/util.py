@@ -124,8 +124,7 @@ class Sumo:
             }
         assert C.EGO_ID in vehicle_data
 
-        # order of position matters for some reason.
-        for id, data in sorted(vehicle_data.items(), key=lambda x: x[1]['position'], reverse=True):
+        for id, data in vehicle_data.items():
             self.sumo_handle.vehicle.add(
                 vehID=id,
                 routeID='', # randomly chosen
@@ -178,6 +177,9 @@ class Sumo:
         else:
             neighbor_ids.append("")
         return neighbor_ids
+
+    def get_state(self, veh_id):
+        pass
 
     def step(self):
         self.sumo_handle.simulationStep()

@@ -86,6 +86,8 @@ class SumoGym(gym.Env):
             vx = self.ego_state['vx']
             vy = self.ego_state['vy']
             lane_index = traci.vehicle.getLaneIndex(vehID)
+            ego_vx = traci.vehicle.getSpeed(vehID)
+            ego_vy = traci.vehicle.getLateralSpeed(vehID)
         else:
             presence = 1
             x = traci.vehicle.getLanePosition(vehID)
@@ -244,6 +246,7 @@ class SumoGym(gym.Env):
         new_x = self.ego_state['x'] + dx
         new_y = self.ego_state['y'] + dy
         # ego-vehicle is mapped to the exact position in the network by setting keepRoute to 2
+        # moveToXY effective after a simulation step
         traci.vehicle.moveToXY(
             self.egoID, edge, lane, new_x, new_y,
             tc.INVALID_DOUBLE_VALUE, 2
@@ -252,12 +255,12 @@ class SumoGym(gym.Env):
         traci.vehicle.setSpeedMode(self.egoID, 0)
         traci.vehicle.setSpeed(self.egoID, vx)
         self.ego_line = line
-        obs = self._compute_observations()
         self.ego_state['x'], self.ego_state['y'] = new_x, new_y
         self.ego_state['vx'], self.ego_state['vy'] = vx, vy
         self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
         info["debug"] = [lat_dist, self.ego_state['lane_y']]
         traci.simulationStep()
+        obs = self._compute_observations()
         reward = self.reward(action)
 
         return obs, reward, False, info
@@ -269,7 +272,20 @@ class SumoGym(gym.Env):
         :param action: the last action performed
         :return: the reward
         """
-        reward = 0
+        obs = self._compute_observations()
+        _, ego_x, ego_y, ego_vx, ego_vy = obs[0][:5]
+
+        # TODO: make speed limit configurable
+        reward = -(ego_vx - 40) ** 2 # encourage staying close to the speed limit
+        reward -= (action[0] ** 2) # discourage too much acceleration
+        for i in range(1, len(obs)):
+            present, x, y, vx, vy = obs[i][:5]
+            if not present:
+                continue
+            if np.abs(y - ego_y) < 1: # same lane
+                if ego_x < x and ego_x > x - 10: # too close to the leading vehicle
+                    reward -= 10 # discourage getting too close to the leading vehicle
+
         return reward
 
     def get_num_lanes(self):
