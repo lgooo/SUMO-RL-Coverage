@@ -17,6 +17,7 @@ parser.add_argument(
     help='config file path')
 parser.add_argument(
     '--num_episodes',
+    type=int,
     default=1,
     help='number of episodes to run'
 )
