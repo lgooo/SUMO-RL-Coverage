@@ -236,7 +236,7 @@ class SumoGym(gym.Env):
         info = {}
         if in_road == False or lane_id == "":
             info["debug"] = "Ego-vehicle is out of network"
-            return obs, 0, True, info
+            return obs, self.config['reward']['off_road'], True, info
         if C.EGO_ID in self.sumo.sumo_handle.simulation.getCollidingVehiclesIDList():
             info["debug"] = "A crash happened to the Ego-vehicle"
             return obs, self.config['reward']['crash'], True, info
