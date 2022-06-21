@@ -1,5 +1,8 @@
 env:
     sumo_config: sumo/simple.sumocfg
+    speed_limit: 30
+    vehicle_speed_mean: 25
+    vehicle_speed_variation: 2
     num_random_vehicles: 20
     goal:
         x: 1000

@@ -32,6 +32,12 @@ parser.add_argument(
     type=float,
     default=0.1,
     help='simulation time step')
+parser.add_argument(
+    '--seed',
+    type=int,
+    default=None,
+    help='random seed',
+)
 args = parser.parse_args()
 
 with open(args.config, 'r') as f:

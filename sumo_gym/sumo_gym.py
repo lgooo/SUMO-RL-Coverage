@@ -284,7 +284,7 @@ class SumoGym(gym.Env):
         _, ego_x, ego_y, ego_vx, ego_vy = obs[0][:5]
 
         # TODO: make speed limit configurable
-        reward = -(ego_vx - 40) ** 2 # encourage staying close to the speed limit
+        reward = -(ego_vx - self.config.get('speed_limit', 20)) ** 2 # encourage staying close to the speed limit
         reward -= (action[0] ** 2) # discourage too much acceleration
         for i in range(1, len(obs)):
             present, x, y, vx, vy = obs[i][:5]

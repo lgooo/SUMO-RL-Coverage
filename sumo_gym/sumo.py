@@ -4,7 +4,7 @@ import os
 import sys
 
 class Sumo:
-    def __init__(self, config, delta_t=0.1, render_flag=True):
+    def __init__(self, config, delta_t=0.1, render_flag=True, seed=None):
         if "SUMO_HOME" not in os.environ:
             sys.exit("please declare environment variable 'SUMO_HOME'")
 
@@ -32,12 +32,15 @@ class Sumo:
             "--step-length", str(delta_t),
             "--collision.action", "warn",
             "--collision.mingap-factor", "0",
-            "--random", "false",
             "--lateral-resolution", ".1",
             "--delay", "100",
             "--start",
             "--quit-on-end",
         ]
+        if seed is None:
+            sumoCmd += ["--random"]
+        else:
+            sumoCmd += ["--seed", str(seed)]
         traci.start(sumoCmd)
 
         self._init()
@@ -45,7 +48,7 @@ class Sumo:
         # simulate until ego appears
         vehicle_ids = []
         while C.EGO_ID not in vehicle_ids:
-            traci.simulationStep()
+            self.step()
             vehicle_ids = traci.vehicle.getIDList()
 
         traci.vehicle.highlight(C.EGO_ID)
@@ -57,7 +60,7 @@ class Sumo:
         lanes = self.sumo_handle.lane.getIDList()
         vehicles = self.sumo_handle.vehicle.getIDList()
         speed_mean = self.config.get('vehicle_speed_mean', 25)
-        speed_stdev = self.config.get('vehicle_speed_stdev', 2)
+        speed_variation = self.config.get('vehicle_speed_variation', 5)
 
         start_time = np.random.permutation(num_random_vehicles) * vehicle_time_gap
 
@@ -75,7 +78,7 @@ class Sumo:
             self.sumo_handle.vehicle.add(
                 vehID=id,
                 routeID='', # randomly chosen
-                departSpeed=np.random.normal(speed_mean, speed_stdev),
+                departSpeed=np.random.uniform(speed_mean - speed_variation, speed_mean + speed_variation),
                 depart=data.get('depart_time', 0),
                 departPos=data['position'],
                 departLane=data.get('lane', 'random'),
@@ -85,6 +88,10 @@ class Sumo:
             if data['lane'] != 'random':
                 self.sumo_handle.vehicle.moveTo(
                     id, laneID=lane_ids[data['lane']], pos=data['position'])
+
+        for lane_id in self.sumo_handle.lane.getIDList():
+            self.sumo_handle.lane.setMaxSpeed(
+                lane_id, self.config.get('speed_limit', 40))
 
     def get_neighbor_ids(self, vehID):
         """
