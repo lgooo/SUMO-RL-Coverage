@@ -16,6 +16,17 @@ parser.add_argument(
     default='config/simple.yaml',
     help='config file path')
 parser.add_argument(
+    '--num_episodes',
+    default=1,
+    help='number of episodes to run'
+)
+parser.add_argument(
+    '--render',
+    action='store_true',
+    default=False,
+    help='whether to use gui rendering',
+)
+parser.add_argument(
     '--delta_t',
     type=float,
     default=0.1,
@@ -28,13 +39,13 @@ with open(args.config, 'r') as f:
 env = SumoGym(
     config=conf['env'],
     delta_t=args.delta_t,
-    render_flag=True,
+    render_flag=args.render,
 )
 
 def policy(obs: Observation) -> Action:
     return [0, 0]
 
-for _ in range(3):
+for _ in range(args.num_episodes):
     obs = env.reset()
     done = False
     while not done:
