@@ -1,5 +1,8 @@
 env:
     sumo_config: sumo/simple.sumocfg
     num_random_vehicles: 20
+    goal:
+        x: 1000
     reward:
+        goal: 100
         crash: -100

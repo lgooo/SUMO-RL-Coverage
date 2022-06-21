@@ -162,8 +162,12 @@ class SumoGym(gym.Env):
         Function to update the state of the ego vehicle based on the action (Accleration)
         Returns difference in position and current speed
         """
-        angle = self.sumo.sumo_handle.vehicle.getAngle(C.EGO_ID)
         lane_id = self.sumo.sumo_handle.vehicle.getLaneID(C.EGO_ID)
+        if lane_id == "":
+            # off-road.
+            return False, [], [], [], [], [], [], [], [], [], []
+
+        angle = self.sumo.sumo_handle.vehicle.getAngle(C.EGO_ID)
         x, y = self.ego_state['x'], self.ego_state['y']
         ax_cmd = action[0]
         ay_cmd = action[1]
@@ -187,11 +191,6 @@ class SumoGym(gym.Env):
         distance = speed * self.delta_t
         long_distance = vx * self.delta_t
         lat_distance = vy * self.delta_t
-        in_road = True
-        # try:
-        if lane_id == "":
-            in_road = False
-            return in_road, [], [], [], [], [], [], [], [], [], []
         if lane_id[0] != ":":
             veh_loc = Point(x, y)
             line = self.ego_line
@@ -214,7 +213,7 @@ class SumoGym(gym.Env):
             line = self.ego_line
             dx, dy = long_lat_pos_cal(angle, acc_y, distance, heading)
 
-        return in_road, dx, dy, speed, line, vx, vy, acc_x, acc_y, long_distance, lat_distance
+        return True, dx, dy, speed, line, vx, vy, acc_x, acc_y, long_distance, lat_distance
 
     def step(self, action: Action) -> Tuple[dict, float, bool, dict]:
         """
@@ -224,6 +223,9 @@ class SumoGym(gym.Env):
         # dict --> useful info in event of crash or out-of-network
         # bool --> false default, true when finishes episode/sims
         # float --> reward = user defined func -- Zero for now (Compute reward functionality)
+
+        reward = self.reward(action)
+
         curr_pos = self.sumo.sumo_handle.vehicle.getPosition(C.EGO_ID)
         (in_road, dx, dy, speed, line, vx, vy, acc_x, acc_y, long_dist, lat_dist) = self._update_state(action)
         edge = self.sumo.sumo_handle.vehicle.getRoadID(C.EGO_ID)
@@ -239,6 +241,7 @@ class SumoGym(gym.Env):
             info["debug"] = "A crash happened to the Ego-vehicle"
             return obs, self.config['reward']['crash'], True, info
 
+        # compute new state
         self.ego_state['lane_x'] += long_dist
         self.ego_state['lane_y'] += lat_dist
         # print(self.ego_state['lane_y'])
@@ -257,14 +260,20 @@ class SumoGym(gym.Env):
         self.ego_state['x'], self.ego_state['y'] = new_x, new_y
         self.ego_state['vx'], self.ego_state['vy'] = vx, vy
         self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
-        info["debug"] = [lat_dist, self.ego_state['lane_y']]
+
+        if self.check_goal(self.ego_state):
+            return [], self.config['reward']['goal'], True, info
+        # update sumo with new ego state
         self.sumo.step()
+
+        # compute next state observation
         obs = self._compute_observations()
-        reward = self.reward(action)
 
         return obs, reward, False, info
 
-    # Reward will not be implemented, user has the option
+    def check_goal(self, ego_state):
+        return self.config['goal']['x'] <= ego_state['x']
+
     def reward(self, action: Action) -> float:
         """
         Return the reward associated with performing a given action and ending up in the current state.
