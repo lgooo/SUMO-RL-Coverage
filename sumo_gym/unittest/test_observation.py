@@ -7,7 +7,7 @@ import yaml
 # hack
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from util import Sumo
+from sumo import Sumo
 
 class TestObservation(unittest.TestCase):
     config1 = {

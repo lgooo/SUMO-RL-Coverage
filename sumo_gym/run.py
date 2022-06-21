@@ -28,16 +28,20 @@ with open(args.config, 'r') as f:
 env = SumoGym(
     config=conf['env'],
     delta_t=args.delta_t,
-    render_flag=True,
+    render_flag=False,
 )
 
 obs = env.reset()
 def policy(obs: Observation) -> Action:
     return [0, 0]
 
-done = False
-while not done:
-    action = policy(obs)
-    obs, reward, done, info = env.step(action=action)
+for _ in range(3):
+    done = False
+    while not done:
+        action = policy(obs)
+        obs, reward, done, info = env.step(action=action)
+    env.close()
+    env.reset()
+    print('done')
 
 env.close()
