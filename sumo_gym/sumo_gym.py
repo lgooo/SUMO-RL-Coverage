@@ -51,7 +51,6 @@ class SumoGym(gym.Env):
         Function to reset the simulation and return the observation
         """
 
-        print('reset')
         self.sumo = Sumo(self.config, self.delta_t, self.render_flag)
 
         x, y = self.sumo.sumo_handle.vehicle.getPosition(C.EGO_ID)

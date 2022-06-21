@@ -34,6 +34,9 @@ class Sumo:
             "--collision.mingap-factor", "0",
             "--random", "false",
             "--lateral-resolution", ".1",
+            "--delay", "100",
+            "--start",
+            "--quit-on-end",
         ]
         traci.start(sumoCmd)
 
