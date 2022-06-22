@@ -1,6 +1,8 @@
 import os
 import sys
 import math
+import collections
+import numpy as np
 
 def add_sumo_path():
     if "SUMO_HOME" in os.environ:
@@ -56,3 +58,25 @@ def long_lat_pos_cal(angle, acc_y, distance, heading):
 
     return dx, dy
 
+
+class ExperienceReplay:
+    def __init__(self, capacity):
+        self.buffer = collections.deque(maxlen=int(capacity))
+
+    def __len__(self):
+        return len(self.buffer)
+
+    def append(self, state, action, reward, next_state, done):
+        experience = (state, action, reward, next_state, done)
+        self.buffer.append(experience)
+
+    def sample(self, batch_size):
+        indices = np.random.choice(len(self.buffer), batch_size,
+                                   replace=False)
+
+        states, actions, rewards, next_states, dones = zip(*[self.buffer[idx] for idx in indices])
+
+        return np.array(states), np.array(actions), \
+               np.array(rewards, dtype=np.float32), \
+               np.array(next_states),\
+               np.array(dones, dtype=np.uint8),indices
