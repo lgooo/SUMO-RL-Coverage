@@ -5,9 +5,13 @@ import argparse
 from sumo_gym import SumoGym
 import numpy as np
 import yaml
+from DDQN import DDQN
+from tensorboardX import SummaryWriter
 
 Observation = np.ndarray
 Action = np.ndarray
+
+writer = SummaryWriter()
 
 parser = argparse.ArgumentParser(
     description='SUMO Gym Tester')
@@ -18,7 +22,7 @@ parser.add_argument(
 parser.add_argument(
     '--num_episodes',
     type=int,
-    default=1,
+    default=500,
     help='number of episodes to run'
 )
 parser.add_argument(
@@ -38,6 +42,12 @@ parser.add_argument(
     default=None,
     help='random seed',
 )
+parser.add_argument(
+    '--test',
+    action='store_true',
+    default=False,
+    help='whether to test the model'
+)
 args = parser.parse_args()
 
 with open(args.config, 'r') as f:
@@ -49,13 +59,48 @@ env = SumoGym(
     render_flag=args.render,
 )
 
-def policy(obs: Observation) -> Action:
-    return [0, 0]
+agent = DDQN(n_states=70, n_actions=5)
 
-for _ in range(args.num_episodes):
+
+
+def policy(obs: Observation) -> Action:
+    return agent.choose_action(obs)
+
+for epi in range(args.num_episodes):
     obs = env.reset()
     done = False
+    episode_reward = 0
+    episode_steps = 0
     while not done:
         action = policy(obs)
-        obs, reward, done, info = env.step(action=action)
+        next_obs, reward, done, info = env.step(action=agent.continuous_action(action))
+        if not done:
+            agent.memory.append(obs, action, reward, next_obs, done)
+        episode_steps += 1
+        episode_reward += reward
+        obs = next_obs
+        agent.update()
+    writer.add_scalar('data/step', episode_steps, epi)
+    writer.add_scalar('data/reward', episode_reward, epi)
     env.close()
+
+agent.save(path="./data")
+
+if args.test:
+    env.render_flag = True
+    agent.load(path="./data")
+    # no e-greedy
+    agent.epsilon_start = 0
+    agent.epsilon_end = 0
+    for _ in range(5):
+        obs = env.reset()
+        done = False
+        episode_reward = 0
+        episode_steps = 0
+        while not done:
+            action = policy(obs)
+            obs, reward, done, info = env.step(action=agent.continuous_action(action))
+            episode_steps += 1
+            episode_reward += reward
+        env.close()
+        print("Steps: {}, Reward: {}".format(episode_steps, episode_reward))
