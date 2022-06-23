@@ -76,6 +76,8 @@ for epi in range(args.num_episodes):
         next_obs, reward, done, info = env.step(action=agent.continuous_action(action))
         if not done:
             agent.memory.append(obs, action, reward, next_obs, done)
+        else:
+            agent.memory.append(obs, action, reward, obs, done)
         episode_steps += 1
         episode_reward += reward
         obs = next_obs
