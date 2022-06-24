@@ -71,6 +71,7 @@ for epi in range(args.num_episodes):
     done = False
     episode_reward = 0
     episode_steps = 0
+    max_x = 0
     while not done:
         action = policy(obs)
         next_obs, reward, done, info = env.step(action=agent.continuous_action(action))
@@ -81,8 +82,11 @@ for epi in range(args.num_episodes):
         episode_steps += 1
         episode_reward += reward
         obs = next_obs
+        if len(obs):
+            max_x = obs[0][1]
         agent.update()
     writer.add_scalar('data/step', episode_steps, epi)
+    writer.add_scalar('data/x', max_x, epi)
     writer.add_scalar('data/reward', episode_reward, epi)
     env.close()
 
