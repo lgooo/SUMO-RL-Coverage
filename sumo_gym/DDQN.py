@@ -92,7 +92,7 @@ class DDQN:
         q_values = self.policy_net(state_batch).gather(dim=1, index=action_batch)
         next_q_actions = torch.max(self.policy_net(next_state_batch), dim=1)[1].unsqueeze(1)
         next_q_values = self.target_net(next_state_batch).gather(dim=1, index=next_q_actions).detach().squeeze(1)
-        expected_q_values = reward_batch + self.gamma * next_q_values
+        expected_q_values = reward_batch + self.gamma * next_q_values * (1 - done_batch)
         loss = nn.MSELoss()(q_values, expected_q_values.unsqueeze(1))
         self.optimizer.zero_grad()
         loss.backward()
