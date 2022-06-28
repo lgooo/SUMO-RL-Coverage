@@ -37,9 +37,8 @@ class DDQN:
         # creat DDQN model
         self.update_freq = 10
         self.batch_size = 64
-        self.model = MLP(n_states, n_actions)
-        self.policy_net = self.model.to(self.device)
-        self.target_net = self.model.to(self.device)
+        self.policy_net = MLP(n_states, n_actions).to(self.device)
+        self.target_net = MLP(n_states, n_actions).to(self.device)
         # initialize target_net and policy_net with same parameters
         for target_param, param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             target_param.data.copy_(param.data)
