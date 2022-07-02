@@ -1,0 +1,12 @@
+env:
+    sumo_config: sumo/simple.sumocfg
+    speed_limit: 20
+    vehicle_speed_mean: 20
+    vehicle_speed_variation: 10
+    num_random_vehicles: 1
+    goal:
+        x: 1000
+    reward:
+        goal: 100
+        crash: -100
+        off_road: -100
