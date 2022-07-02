@@ -61,7 +61,17 @@ env = SumoGym(
 
 agent = DDQN(n_states=70, n_actions=5)
 
-
+def obs_filter(obs:Observation):
+    if len(obs):
+        if obs.max()>1e3:
+            print(obs.max())
+            return False
+        elif obs.min()<-1e3:
+            print(obs.min())
+            return False
+        else:
+            return True
+    return False
 
 def policy(obs: Observation) -> Action:
     return agent.choose_action(obs)
@@ -76,9 +86,11 @@ for epi in range(args.num_episodes):
         action = policy(obs)
         next_obs, reward, done, info = env.step(action=agent.continuous_action(action))
         if not done:
-            agent.memory.append(obs, action, reward, next_obs, done)
+            if obs_filter(next_obs):
+                agent.memory.append(obs, action, reward, next_obs, done)
         else:
-            agent.memory.append(obs, action, reward, obs, done)
+            if obs_filter(next_obs):
+                agent.memory.append(obs, action, reward, obs, done)
         episode_steps += 1
         episode_reward += reward
         obs = next_obs
