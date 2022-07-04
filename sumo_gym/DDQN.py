@@ -79,7 +79,7 @@ class DDQN:
 
     def update(self):
         if len(self.memory) < self.batch_size:
-            return
+            return None
 
         state_batch, action_batch, reward_batch, next_state_batch, done_batch, indices = self.memory.sample(
             self.batch_size)
@@ -102,6 +102,8 @@ class DDQN:
 
         if self.frame_idx % self.update_freq == 0:  # update target_net
             self.target_net.load_state_dict(self.policy_net.state_dict())
+
+        return loss.item()
 
     def save(self, path):
         torch.save(self.target_net.state_dict(), path + 'dqn_checkpoint.pth')
