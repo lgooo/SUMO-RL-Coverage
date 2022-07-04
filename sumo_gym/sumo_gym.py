@@ -145,16 +145,21 @@ class SumoGym(gym.Env):
         9 - remaning time of the current signal status in seconds
         """
         ego_features = self._get_features(C.EGO_ID)
+        ego_x = ego_features[1]
 
         neighbor_ids = self.sumo.get_neighbor_ids(C.EGO_ID)
-        obs = np.ndarray((len(neighbor_ids)+1, 10))
-        obs[0, :] = ego_features
+        obs = np.ndarray((len(neighbor_ids) + 1, 5))
+        obs[0, :] = ego_features[:5]
         for i, neighbor_id in enumerate(neighbor_ids):
             if neighbor_id != "":
                 features = self._get_features(neighbor_id)
-                obs[i + 1, :] = features
+                obs[i + 1, :] = features[:5]
             else:
-                obs[i + 1, :] = np.zeros((10, ))
+                obs[i + 1, :] = np.zeros((5, ))
+
+        for i in range(obs.shape[0]):
+            if obs[i, 0] == 1:
+                obs[i, 1] -= ego_x
         return obs
 
     def _update_state(self, action: Action) -> Tuple[bool, float, float, float, LineString, float, float, float, float, float, float]:
@@ -181,6 +186,8 @@ class SumoGym(gym.Env):
         acc_x, acc_y = self.ego_state['ax'], self.ego_state['ay']
         acc_x += (ax_cmd - acc_x) * self.delta_t
         acc_y += (ay_cmd - acc_y) * self.delta_t
+        acc_x = ax_cmd
+        acc_y = ay_cmd
 
         vx += acc_x * self.delta_t
         vy += acc_y * self.delta_t
@@ -284,7 +291,7 @@ class SumoGym(gym.Env):
         _, ego_x, ego_y, ego_vx, ego_vy = obs[0][:5]
 
         # TODO: make speed limit configurable
-        reward = -(ego_vx - self.config.get('speed_limit', 20)) ** 2 # encourage staying close to the speed limit
+        reward = -np.abs(ego_vx - self.config.get('speed_limit', 20)) # encourage staying close to the speed limit
         reward -= (action[0] ** 2) # discourage too much acceleration
         for i in range(1, len(obs)):
             present, x, y, vx, vy = obs[i][:5]
@@ -294,6 +301,7 @@ class SumoGym(gym.Env):
                 if ego_x < x and ego_x > x - 10: # too close to the leading vehicle
                     reward -= 10 # discourage getting too close to the leading vehicle
 
+        reward += 10 # reward for staying in the game
         return reward
 
     def get_num_lanes(self):

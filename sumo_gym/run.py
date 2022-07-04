@@ -59,7 +59,7 @@ env = SumoGym(
     render_flag=args.render,
 )
 
-agent = DDQN(n_states=70, n_actions=5)
+agent = DDQN(n_states=35, n_actions=5)
 
 def obs_filter(obs:Observation):
     if len(obs):
@@ -90,14 +90,16 @@ for epi in range(args.num_episodes):
             if obs_filter(next_obs):
                 agent.memory.append(obs, action, reward, next_obs, done)
         else:
-            if obs_filter(next_obs):
+            if obs_filter(obs):
                 agent.memory.append(obs, action, reward, obs, done)
         episode_steps += 1
         episode_reward += reward
         obs = next_obs
         if len(obs):
-            max_x = obs[0][1]
+            max_x = env.ego_state['lane_x']
         loss = agent.update()
+        if episode_steps > 1000:
+            break
     writer.add_scalar('data/step', episode_steps, epi)
     writer.add_scalar('data/x', max_x, epi)
     writer.add_scalar('data/reward', episode_reward, epi)
