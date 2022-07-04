@@ -96,8 +96,10 @@ for epi in range(args.num_episodes):
         episode_reward += reward
         obs = next_obs
         if len(obs):
-            max_x = obs[0][1]
+            max_x = env.ego_state['lane_x']
         loss = agent.update()
+        if episode_steps > 1000:
+            break
     writer.add_scalar('data/step', episode_steps, epi)
     writer.add_scalar('data/x', max_x, epi)
     writer.add_scalar('data/reward', episode_reward, epi)

@@ -185,6 +185,8 @@ class SumoGym(gym.Env):
         acc_x, acc_y = self.ego_state['ax'], self.ego_state['ay']
         acc_x += (ax_cmd - acc_x) * self.delta_t
         acc_y += (ay_cmd - acc_y) * self.delta_t
+        acc_x = ax_cmd
+        acc_y = ay_cmd
 
         vx += acc_x * self.delta_t
         vy += acc_y * self.delta_t
@@ -288,7 +290,7 @@ class SumoGym(gym.Env):
         _, ego_x, ego_y, ego_vx, ego_vy = obs[0][:5]
 
         # TODO: make speed limit configurable
-        reward = -(ego_vx - self.config.get('speed_limit', 20)) ** 2 # encourage staying close to the speed limit
+        reward = -np.abs(ego_vx - self.config.get('speed_limit', 20)) # encourage staying close to the speed limit
         reward -= (action[0] ** 2) # discourage too much acceleration
         for i in range(1, len(obs)):
             present, x, y, vx, vy = obs[i][:5]
@@ -298,6 +300,7 @@ class SumoGym(gym.Env):
                 if ego_x < x and ego_x > x - 10: # too close to the leading vehicle
                     reward -= 10 # discourage getting too close to the leading vehicle
 
+        reward += 10 # reward for staying in the game
         return reward
 
     def get_num_lanes(self):

@@ -31,18 +31,18 @@ class DDQN:
         self.gamma = 0.95
         # epsilon-greedy
         self.frame_idx = 0
-        self.epsilon_start = 0.90
+        self.epsilon_start = 1.0
         self.epsilon_end = 0.01
-        self.epsilon_decay = 500
+        self.epsilon_decay = 10000
         # creat DDQN model
-        self.update_freq = 10
-        self.batch_size = 64
+        self.update_freq = 256
+        self.batch_size = 2048
         self.policy_net = MLP(n_states, n_actions).to(self.device)
         self.target_net = MLP(n_states, n_actions).to(self.device)
         # initialize target_net and policy_net with same parameters
         for target_param, param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             target_param.data.copy_(param.data)
-        self.optimizer = optim.SGD(self.policy_net.parameters(), lr=0.001)
+        self.optimizer = optim.SGD(self.policy_net.parameters(), lr=1e-8)
         self.memory = ExperienceReplay(capacity=1e5)
 
     def continuous_action(self, act):
