@@ -59,7 +59,7 @@ env = SumoGym(
     render_flag=args.render,
 )
 
-agent = DDQN(n_states=70, n_actions=5)
+agent = DDQN(n_states=35, n_actions=5)
 
 def obs_filter(obs:Observation):
     if len(obs):

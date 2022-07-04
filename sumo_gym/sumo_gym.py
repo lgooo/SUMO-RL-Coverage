@@ -145,16 +145,20 @@ class SumoGym(gym.Env):
         9 - remaning time of the current signal status in seconds
         """
         ego_features = self._get_features(C.EGO_ID)
+        ego_x = ego_features[1]
 
         neighbor_ids = self.sumo.get_neighbor_ids(C.EGO_ID)
-        obs = np.ndarray((len(neighbor_ids)+1, 10))
-        obs[0, :] = ego_features
+        obs = np.ndarray((len(neighbor_ids) + 1, 5))
+        obs[0, :] = ego_features[:5]
         for i, neighbor_id in enumerate(neighbor_ids):
             if neighbor_id != "":
                 features = self._get_features(neighbor_id)
-                obs[i + 1, :] = features
+                obs[i + 1, :] = features[:5]
             else:
-                obs[i + 1, :] = np.zeros((10, ))
+                obs[i + 1, :] = np.zeros((5, ))
+
+        for i in range(obs.shape[0]):
+            obs[i, 1] -= ego_x
         return obs
 
     def _update_state(self, action: Action) -> Tuple[bool, float, float, float, LineString, float, float, float, float, float, float]:
