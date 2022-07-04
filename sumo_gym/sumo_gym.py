@@ -158,7 +158,8 @@ class SumoGym(gym.Env):
                 obs[i + 1, :] = np.zeros((5, ))
 
         for i in range(obs.shape[0]):
-            obs[i, 1] -= ego_x
+            if obs[i, 0] == 1:
+                obs[i, 1] -= ego_x
         return obs
 
     def _update_state(self, action: Action) -> Tuple[bool, float, float, float, LineString, float, float, float, float, float, float]:

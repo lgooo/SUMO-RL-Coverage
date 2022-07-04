@@ -90,7 +90,7 @@ for epi in range(args.num_episodes):
             if obs_filter(next_obs):
                 agent.memory.append(obs, action, reward, next_obs, done)
         else:
-            if obs_filter(next_obs):
+            if obs_filter(obs):
                 agent.memory.append(obs, action, reward, obs, done)
         episode_steps += 1
         episode_reward += reward
