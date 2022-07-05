@@ -9,4 +9,4 @@ env:
     reward:
         goal: 0
         crash: -100
-        off_road: -400
+        off_road: -10

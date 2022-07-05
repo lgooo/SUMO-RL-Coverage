@@ -290,9 +290,10 @@ class SumoGym(gym.Env):
         obs = self._compute_observations()
         _, ego_x, ego_y, ego_vx, ego_vy = obs[0][:5]
 
-        # TODO: make speed limit configurable
         reward = -np.abs(ego_vx - self.config.get('speed_limit', 20)) # encourage staying close to the speed limit
         reward -= (action[0] ** 2) # discourage too much acceleration
+        reward -= np.min(((np.array([1.6, 4.8, 8]) - ego_y) ** 2)) # penalize staying off lane
+
         for i in range(1, len(obs)):
             present, x, y, vx, vy = obs[i][:5]
             if not present:
