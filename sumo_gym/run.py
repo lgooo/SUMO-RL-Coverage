@@ -7,6 +7,7 @@ import numpy as np
 import yaml
 from DDQN import DDQN
 from tensorboardX import SummaryWriter
+import sys
 
 Observation = np.ndarray
 Action = np.ndarray
@@ -76,6 +77,27 @@ def obs_filter(obs:Observation):
 def policy(obs: Observation) -> Action:
     return agent.choose_action(obs)
 
+if args.test:
+    print('test')
+    env.render_flag = True
+    agent.load(path="./data")
+    # no e-greedy
+    agent.epsilon_start = 0
+    agent.epsilon_end = 0
+    for _ in range(5):
+        obs = env.reset()
+        done = False
+        episode_reward = 0
+        episode_steps = 0
+        while not done:
+            action = policy(obs)
+            obs, reward, done, info = env.step(action=agent.continuous_action(action))
+            episode_steps += 1
+            episode_reward += reward
+        env.close()
+        print("Steps: {}, Reward: {}".format(episode_steps, episode_reward))
+    sys.exit(0)
+
 for epi in range(args.num_episodes):
     obs = env.reset()
     done = False
@@ -110,22 +132,3 @@ for epi in range(args.num_episodes):
     env.close()
 
 agent.save(path="./data")
-
-if args.test:
-    env.render_flag = True
-    agent.load(path="./data")
-    # no e-greedy
-    agent.epsilon_start = 0
-    agent.epsilon_end = 0
-    for _ in range(5):
-        obs = env.reset()
-        done = False
-        episode_reward = 0
-        episode_steps = 0
-        while not done:
-            action = policy(obs)
-            obs, reward, done, info = env.step(action=agent.continuous_action(action))
-            episode_steps += 1
-            episode_reward += reward
-        env.close()
-        print("Steps: {}, Reward: {}".format(episode_steps, episode_reward))
