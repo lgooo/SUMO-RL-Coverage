@@ -64,10 +64,22 @@ class DDQN:
             action = [0, -2]
         return action
 
+    def get_epsilon(self):
+        return (
+            self.epsilon_end +
+            (self.epsilon_start - self.epsilon_end) * math.exp(
+            -1. * self.frame_idx / self.epsilon_decay)
+        )
+
+    def get_norm(self):
+        total = 0
+        for param in self.policy_net.parameters():
+            total += param.norm().item() ** 2
+        return np.sqrt(total)
+
     def choose_action(self, state):
         self.frame_idx += 1
-        epsilon = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * math.exp(
-            -1. * self.frame_idx / self.epsilon_decay)
+        epsilon = self.get_epsilon()
         if random.random() > epsilon:
             with torch.no_grad():
                 state = torch.tensor(state, device=self.device, dtype=torch.float32).unsqueeze(dim=0)

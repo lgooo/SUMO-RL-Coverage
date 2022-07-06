@@ -103,6 +103,8 @@ for epi in range(args.num_episodes):
     writer.add_scalar('data/step', episode_steps, epi)
     writer.add_scalar('data/x', max_x, epi)
     writer.add_scalar('data/reward', episode_reward, epi)
+    writer.add_scalar('data/network-norm', agent.get_norm(), epi)
+    writer.add_scalar('data/epsilon', agent.get_epsilon(), epi)
     if loss is not None:
         writer.add_scalar('data/loss', loss, epi)
     env.close()
