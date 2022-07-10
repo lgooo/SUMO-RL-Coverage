@@ -7,6 +7,11 @@ env:
     goal:
         x: 1000
     reward:
-        goal: 100
-        crash: -100
-        off_road: -100
+        goal_bonus: 0
+        crash_penalty: 100
+        off_road_penalty: 10
+        off_lane_penalty_factor: 1
+        speed_penalty_factor: 1
+        acceleration_penalty_factor: 1
+        alive_bonus: 10
+        safety_penalty: 10
