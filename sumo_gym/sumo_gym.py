@@ -243,10 +243,10 @@ class SumoGym(gym.Env):
         info = {}
         if in_road == False or lane_id == "":
             info["debug"] = "Ego-vehicle is out of network"
-            return obs, self.config['reward']['off_road'], True, info
+            return obs, self.config['reward']['off_road_penalty'], True, info
         if C.EGO_ID in self.sumo.sumo_handle.simulation.getCollidingVehiclesIDList():
             info["debug"] = "A crash happened to the Ego-vehicle"
-            return obs, self.config['reward']['crash'], True, info
+            return obs, self.config['reward']['crash_penalty'], True, info
 
         # compute new state
         self.ego_state['lane_x'] += long_dist
@@ -290,19 +290,25 @@ class SumoGym(gym.Env):
         obs = self._compute_observations()
         _, ego_x, ego_y, ego_vx, ego_vy = obs[0][:5]
 
-        reward = -np.abs(ego_vx - self.config.get('speed_limit', 20)) # encourage staying close to the speed limit
-        reward -= (action[0] ** 2) # discourage too much acceleration
-        reward -= np.min(((np.array([1.6, 4.8, 8]) - ego_y) ** 2)) # penalize staying off lane
+        R = self.config.get('reward', {})
+
+        reward = -np.abs(
+            ego_vx - self.config.get('speed_limit', 20)
+        ) * R.get('speed_penalty_factor', 1)  # encourage staying close to the speed limit
+        reward -= (action[0] ** 2) * R.get('acceleration_penalty_factor', 1) # discourage too much acceleration
+        reward -= np.min(
+            ((np.array([1.6, 4.8, 8]) - ego_y) ** 2)
+        ) * R.get('off_lane_penalty_factor', 1) # penalize staying off lane
 
         for i in range(1, len(obs)):
             present, x, y, vx, vy = obs[i][:5]
             if not present:
                 continue
-            if np.abs(y - ego_y) < 1: # same lane
+            if np.abs(y - ego_y) < 2: # same lane
                 if ego_x < x and ego_x > x - 10: # too close to the leading vehicle
-                    reward -= 10 # discourage getting too close to the leading vehicle
+                    reward -= R.get('safety_penalty', 10) # discourage getting too close to the leading vehicle
 
-        reward += 10 # reward for staying in the game
+        reward += R.get('alive_bonus', 10) # reward for staying in the game
         return reward
 
     def get_num_lanes(self):
