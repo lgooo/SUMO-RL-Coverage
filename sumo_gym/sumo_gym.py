@@ -239,14 +239,16 @@ class SumoGym(gym.Env):
         lane = self.sumo.sumo_handle.vehicle.getLaneIndex(C.EGO_ID)
         lane_id = self.sumo.sumo_handle.vehicle.getLaneID(C.EGO_ID)
 
+        R = self.config.get('reward', {})
+
         obs = []
         info = {}
         if in_road == False or lane_id == "":
             info["debug"] = "Ego-vehicle is out of network"
-            return obs, self.config['reward']['off_road_penalty'], True, info
+            return obs, -R.get('off_road_penalty', 10), True, info
         if C.EGO_ID in self.sumo.sumo_handle.simulation.getCollidingVehiclesIDList():
             info["debug"] = "A crash happened to the Ego-vehicle"
-            return obs, self.config['reward']['crash_penalty'], True, info
+            return obs, -R.get('crash_penalty', 100), True, info
 
         # compute new state
         self.ego_state['lane_x'] += long_dist
@@ -269,7 +271,7 @@ class SumoGym(gym.Env):
         self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
 
         if self.check_goal(self.ego_state):
-            return [], self.config['reward']['goal'], True, info
+            return [], R.get('goal_bonus', 0), True, info
         # update sumo with new ego state
         self.sumo.step()
 
