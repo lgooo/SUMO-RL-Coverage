@@ -15,3 +15,12 @@ env:
         acceleration_penalty_factor: 1
         alive_bonus: 10
         safety_penalty: 10
+
+alg:
+    gamma: 0.99
+    epsilon_start: 1.0
+    epsilon_end: 0.1
+    epsilon_decay: 500
+    update_freq: 512
+    batch_size: 256
+    lr: 0.00005

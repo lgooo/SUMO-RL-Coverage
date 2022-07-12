@@ -25,7 +25,7 @@ class MLP(nn.Module):
 
 
 class DDQN:
-    def __init__(self, n_states, n_actions, seed):
+    def __init__(self, n_states, n_actions,config, seed):
         self.n_actions = n_actions
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if seed is not None:
@@ -34,22 +34,24 @@ class DDQN:
             torch.manual_seed(seed)
             torch.cuda.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
-        self.gamma = 0.99
+        self.gamma = config.get('gamma',0.99)
         # epsilon-greedy
         self.frame_idx = 0
-        self.epsilon_start = 1.0
-        self.epsilon_end = 0.01
-        self.epsilon_decay = 500
+        self.epsilon_start = config.get('epsilon_start',1.0)
+        self.epsilon_end = config.get('epsilon_end',0.01)
+        self.epsilon_decay = config.get('epsilon_decay',500)
         # creat DDQN model
-        self.update_freq = 512
-        self.batch_size = 256
+        self.update_freq = config.get('update_freq',512)
+        self.batch_size = config.get('batch_size',256)
+        self.lr=config.get('lr',0.00005)
+        self.memory_size=config.get('memory_size',1e5)
         self.policy_net = MLP(n_states, n_actions).to(self.device)
         self.target_net = MLP(n_states, n_actions).to(self.device)
         # initialize target_net and policy_net with same parameters
         for target_param, param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             target_param.data.copy_(param.data)
-        self.optimizer = optim.SGD(self.policy_net.parameters(), lr=0.00005)
-        self.memory = ExperienceReplay(capacity=1e5)
+        self.optimizer = optim.SGD(self.policy_net.parameters(), lr=self.lr)
+        self.memory = ExperienceReplay(capacity=self.memory_size)
 
 
     def continuous_action(self, act):

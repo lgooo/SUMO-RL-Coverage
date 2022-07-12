@@ -23,7 +23,7 @@ parser.add_argument(
 parser.add_argument(
     '--num_episodes',
     type=int,
-    default=100,
+    default=500,
     help='number of episodes to run'
 )
 parser.add_argument(
@@ -61,7 +61,7 @@ env = SumoGym(
     seed=args.seed
 )
 
-agent = DDQN(n_states=35, n_actions=5, seed=args.seed)
+agent = DDQN(n_states=35, n_actions=5,config=conf['alg'], seed=args.seed)
 
 def obs_filter(obs:Observation):
     if len(obs):
