@@ -38,20 +38,21 @@ class SumoGym(gym.Env):
     returns None
     """
 
-    def __init__(self, config, delta_t, render_flag=True) -> None:
+    def __init__(self, config, delta_t, render_flag=True, seed=None) -> None:
         self.delta_t = delta_t
         self.vehID = []
         self.ego_state = dict({"x": 0, "y": 0, "lane_x": 0, "lane_y": 0, "vx": 0, "vy": 0, "ax": 0, "ay": 0})
         self.config = config
         self.sumo = None
         self.render_flag = render_flag
+        self.seed=seed
 
     def reset(self) -> Observation:
         """
         Function to reset the simulation and return the observation
         """
 
-        self.sumo = Sumo(self.config, self.delta_t, self.render_flag)
+        self.sumo = Sumo(self.config, self.delta_t, self.render_flag,self.seed)
 
         x, y = self.sumo.sumo_handle.vehicle.getPosition(C.EGO_ID)
 

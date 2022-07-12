@@ -23,7 +23,7 @@ parser.add_argument(
 parser.add_argument(
     '--num_episodes',
     type=int,
-    default=500,
+    default=100,
     help='number of episodes to run'
 )
 parser.add_argument(
@@ -58,9 +58,10 @@ env = SumoGym(
     config=conf['env'],
     delta_t=args.delta_t,
     render_flag=args.render,
+    seed=args.seed
 )
 
-agent = DDQN(n_states=35, n_actions=5)
+agent = DDQN(n_states=35, n_actions=5, seed=args.seed)
 
 def obs_filter(obs:Observation):
     if len(obs):
@@ -130,5 +131,6 @@ for epi in range(args.num_episodes):
     if loss is not None:
         writer.add_scalar('data/loss', loss, epi)
     env.close()
+
 
 agent.save(path="./data")
