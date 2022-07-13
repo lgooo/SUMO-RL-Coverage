@@ -168,7 +168,8 @@ class SumoGym(gym.Env):
 
         Return: distance, long_distance, lat_distance, vx, vy, speed, heading, acc_x, acc_y
         '''
-        if self.params.action_type == "acc_steering":
+        action_type = self.config.get('action_type', 'acceleration')
+        if action_type == "acc_steering":
             acceleration = action[0]
             delta_f = action[1]
             beta = np.arctan(1 / 2 * np.tan(delta_f))
@@ -191,7 +192,7 @@ class SumoGym(gym.Env):
             vx, vy = speed * np.array([np.cos(heading), np.sin(heading)])
             heading += math.radians(angle) # Add angle between road and world coordinate
             # print("steering action: ", acceleration, delta_f, "\tacceleration: ", acc_x, acc_y)
-        elif self.params.action_type == "acceleration":
+        elif action_type == "acceleration":
             ax_cmd = action[0]
             ay_cmd = action[1]
             vx, vy = self.ego_state['vx'], self.ego_state['vy']
@@ -203,6 +204,10 @@ class SumoGym(gym.Env):
             acc_x, acc_y = self.ego_state['ax'], self.ego_state['ay']
             acc_x += (ax_cmd - acc_x) * self.delta_t
             acc_y += (ay_cmd - acc_y) * self.delta_t
+
+            # Hack
+            acc_x = ax_cmd
+            acc_y = ay_cmd
 
             vx += acc_x * self.delta_t
             vy += acc_y * self.delta_t
@@ -288,11 +293,11 @@ class SumoGym(gym.Env):
             return obs, -R.get('crash_penalty', 100), True, info
 
         # update lane_x and lane_y (based on true value instead of ego_state)
-        y = traci.vehicle.getLateralLanePosition(self.egoID)
-        lane_id = traci.vehicle.getLaneID(self.egoID)
-        lane_index = traci.vehicle.getLaneIndex(self.egoID)
+        y = traci.vehicle.getLateralLanePosition(C.EGO_ID)
+        lane_id = traci.vehicle.getLaneID(C.EGO_ID)
+        lane_index = traci.vehicle.getLaneIndex(C.EGO_ID)
         lane_width = traci.lane.getWidth(lane_id)
-        self.ego_state['lane_x'] = traci.vehicle.getLanePosition(self.egoID) + long_dist
+        self.ego_state['lane_x'] = traci.vehicle.getLanePosition(C.EGO_ID) + long_dist
         self.ego_state['lane_y'] = lane_width * (lane_index + 0.5) + y + lat_dist
         # print(self.ego_state['lane_y'])
         new_x = self.ego_state['x'] + dx
