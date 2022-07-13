@@ -59,6 +59,31 @@ def long_lat_pos_cal(angle, acc_y, distance, heading):
     return dx, dy
 
 
+class SumoUtil:
+    @staticmethod
+    def is_dangerous(obs) -> bool:
+        assert obs.shape == (7, 5)
+
+        # note that ego_x is always zero since we use relative x position
+        _, ego_x, ego_y, ego_vx, ego_vy = obs[0, :]
+        for i in range(obs.shape[0]):
+            if i == 0:
+                # skip ego
+                continue
+            presence, x, y, vx, vy = obs[i, :]
+            if not presence:
+                continue
+            if np.abs(ego_y - y) < 2 and np.abs(ego_x - x) < 3:
+                # Ego too close to other vehicle
+                return True
+            if np.abs(ego_y - y) < 2 and ego_x < x and ego_vx > vx:
+                # calculate TTC to the leading vehicle
+                ttc = (x - ego_x) / (ego_vx - vx)
+                if ttc <= 2:
+                    return True
+        return False
+
+
 class ExperienceReplay:
     def __init__(self, capacity):
         self.buffer = collections.deque(maxlen=int(capacity))

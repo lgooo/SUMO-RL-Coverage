@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sumo import Sumo
 from sumo_gym import SumoGym
+from util import SumoUtil
 
 class TestObservation(unittest.TestCase):
     config1 = {
@@ -34,6 +35,79 @@ class TestObservation(unittest.TestCase):
 
         sumo.close()
 
+    def test_dangerous(self):
+        # very safe
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 20},
+            'v1': {'position': 150, 'lane': 1, 'speed': 20},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        obs = sumo_gym._compute_observations()
+        self.assertFalse(SumoUtil.is_dangerous(obs))
+        sumo_gym.close()
+
+        # dangerous since leading vehicle very close.
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 20},
+            'v1': {'position': 101, 'lane': 1, 'speed': 20},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        obs = sumo_gym._compute_observations()
+        self.assertTrue(SumoUtil.is_dangerous(obs))
+        sumo_gym.close()
+
+        # safe because the leading vehicle is close but in another lane.
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 20},
+            'v1': {'position': 101, 'lane': 2, 'speed': 20},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        obs = sumo_gym._compute_observations()
+        self.assertFalse(SumoUtil.is_dangerous(obs))
+        sumo_gym.close()
+
+        # safe because ttc is infinity
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 20},
+            'v1': {'position': 110, 'lane': 1, 'speed': 20},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        obs = sumo_gym._compute_observations()
+        self.assertFalse(SumoUtil.is_dangerous(obs))
+        sumo_gym.close()
+
+        # dangerous because ttc is 1 second
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 30},
+            'v1': {'position': 110, 'lane': 1, 'speed': 20},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        obs = sumo_gym._compute_observations()
+        self.assertTrue(SumoUtil.is_dangerous(obs))
+        sumo_gym.close()
+
+        # dangerous because following vehicle is very close
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 20},
+            'v1': {'position': 99, 'lane': 1, 'speed': 20},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        obs = sumo_gym._compute_observations()
+        self.assertTrue(SumoUtil.is_dangerous(obs))
+        sumo_gym.close()
+
     def test_reward(self):
         conf = self.config1.copy()
         conf['vehicle_list'] = {
@@ -42,6 +116,7 @@ class TestObservation(unittest.TestCase):
         sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
         sumo_gym.reset()
         print(sumo_gym._compute_observations())
+        sumo_gym.close()
 
 
 if __name__ == '__main__':
