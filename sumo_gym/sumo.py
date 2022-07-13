@@ -46,7 +46,7 @@ class Sumo:
         self._init()
 
         # simulate until ego appears
-        vehicle_ids = []
+        vehicle_ids = traci.vehicle.getIDList()
         while C.EGO_ID not in vehicle_ids:
             self.step()
             vehicle_ids = traci.vehicle.getIDList()
@@ -75,10 +75,11 @@ class Sumo:
         assert C.EGO_ID in vehicle_data
 
         for id, data in vehicle_data.items():
+            speed = data.get('speed', np.random.uniform(speed_mean - speed_variation, speed_mean + speed_variation))
             self.sumo_handle.vehicle.add(
                 vehID=id,
                 routeID='', # randomly chosen
-                departSpeed=np.random.uniform(speed_mean - speed_variation, speed_mean + speed_variation),
+                departSpeed=speed,
                 depart=data.get('depart_time', 0),
                 departPos=data['position'],
                 departLane=data.get('lane', 'random'),

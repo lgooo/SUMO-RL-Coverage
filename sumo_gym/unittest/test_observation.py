@@ -8,6 +8,7 @@ import yaml
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sumo import Sumo
+from sumo_gym import SumoGym
 
 class TestObservation(unittest.TestCase):
     config1 = {
@@ -32,6 +33,15 @@ class TestObservation(unittest.TestCase):
         )
 
         sumo.close()
+
+    def test_reward(self):
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 25},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        print(sumo_gym._compute_observations())
 
 
 if __name__ == '__main__':
