@@ -65,22 +65,33 @@ class SumoUtil:
         assert obs.shape == (7, 5)
 
         # note that ego_x is always zero since we use relative x position
-        _, ego_x, ego_y, ego_vx, ego_vy = obs[0, :]
+        ego_state = obs[0, :]
         for i in range(obs.shape[0]):
             if i == 0:
                 # skip ego
                 continue
-            presence, x, y, vx, vy = obs[i, :]
-            if not presence:
-                continue
-            if np.abs(ego_y - y) < 2 and np.abs(ego_x - x) < 3:
-                # Ego too close to other vehicle
+            veh_state = obs[i, :]
+            if SumoUtil.is_dangerous_pair(ego_state, veh_state):
                 return True
-            if np.abs(ego_y - y) < 2 and ego_x < x and ego_vx > vx:
-                # calculate TTC to the leading vehicle
-                ttc = (x - ego_x) / (ego_vx - vx)
-                if ttc <= 2:
-                    return True
+        return False
+
+    @staticmethod
+    def is_dangerous_pair(ego_state, veh_state) -> bool:
+        assert len(ego_state) == 5
+        assert len(veh_state) == 5
+
+        _, ego_x, ego_y, ego_vx, ego_vy = ego_state
+        present, x, y, vx, vy = veh_state
+        if not present:
+            return False
+        if np.abs(ego_y - y) < 2 and np.abs(ego_x - x) < 3:
+            # Ego too close to other vehicle
+            return True
+        if np.abs(ego_y - y) < 2 and ego_x < x and ego_vx > vx:
+            # calculate TTC to the leading vehicle
+            ttc = (x - ego_x) / (ego_vx - vx)
+            if ttc <= 2:
+                return True
         return False
 
 
