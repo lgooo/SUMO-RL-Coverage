@@ -7,7 +7,7 @@ import yaml
 # hack
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sumo import Sumo
+from sumo_handler import Sumo
 from sumo_gym import SumoGym
 from util import SumoUtil
 

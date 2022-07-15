@@ -4,7 +4,7 @@
 import os
 import sys
 from util import add_sumo_path
-from sumo import Sumo
+from sumo_handler import Sumo
 from util import long_lat_pos_cal
 
 add_sumo_path()
