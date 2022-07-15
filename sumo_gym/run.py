@@ -7,7 +7,10 @@ import numpy as np
 import yaml
 from DDQN import DDQN
 from tensorboardX import SummaryWriter
+import os
 import sys
+import shutil
+import datetime
 
 Observation = np.ndarray
 Action = np.ndarray
@@ -20,6 +23,9 @@ parser.add_argument(
     '--config',
     default='config/simple.yaml',
     help='config file path')
+parser.add_argument(
+    '--experiment',
+    help='experiment name')
 parser.add_argument(
     '--num_episodes',
     type=int,
@@ -79,9 +85,8 @@ def policy(obs: Observation) -> Action:
     return agent.choose_action(obs)
 
 if args.test:
-    print('test')
     env.render_flag = True
-    agent.load(path="./data")
+    agent.load(args.model_path)
     # no e-greedy
     agent.epsilon_start = 0
     agent.epsilon_end = 0
@@ -98,6 +103,17 @@ if args.test:
         env.close()
         print("Steps: {}, Reward: {}".format(episode_steps, episode_reward))
     sys.exit(0)
+
+experiment_name = args.experiment
+config_name = args.config.split('/')[-1].rsplit('.', 1)[0]
+if not experiment_name:
+    datestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    experiment_name = f'{config_name}_{datestamp}'
+
+if not os.path.exists(f'data/{experiment_name}/model'):
+    os.makedirs(f'data/{experiment_name}/model')
+
+shutil.copy(args.config, f'data/{experiment_name}/{config_name}.yaml')
 
 for epi in range(args.num_episodes):
     obs = env.reset()
@@ -132,5 +148,6 @@ for epi in range(args.num_episodes):
         writer.add_scalar('data/loss', loss, epi)
     env.close()
 
-
-agent.save(path="./data")
+    # save model every 100 episodes
+    if (epi + 1) % 100 == 0:
+        agent.save(f'data/{experiment_name}/model/{epi + 1}.pth')
