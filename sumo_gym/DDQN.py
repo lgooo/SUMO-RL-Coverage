@@ -50,7 +50,21 @@ class DDQN:
         # initialize target_net and policy_net with same parameters
         for target_param, param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             target_param.data.copy_(param.data)
-        self.optimizer = optim.SGD(self.policy_net.parameters(), lr=self.lr)
+        optimizer_name = config.get('optimizer', 'sgd')
+        if optimizer_name == 'sgd':
+            self.optimizer = optim.SGD(
+                self.policy_net.parameters(),
+                lr=self.lr,
+                weight_decay=config.get('weight_decay', 0),
+            )
+        elif optimizer_name == 'adam':
+            self.optimizer = optim.Adam(
+                self.policy_net.parameters(),
+                lr=self.lr,
+                weight_decay=config.get('weight_decay', 0),
+            )
+        else:
+            raise Exception(f'Unsupported optimizer: {optimizer_name}')
         self.memory = ExperienceReplay(capacity=self.memory_size)
 
 
