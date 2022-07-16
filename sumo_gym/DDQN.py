@@ -69,22 +69,24 @@ class DDQN:
 
 
     def continuous_action(self, act):
+        ax = self.config.get('action_x_acc', 2)
+        ay = self.config.get('action_y_acc', 2)
         action = [0, 0]
         # move forward
         if act == 0:
             action = [0, 0]
         # accelerate
         elif act == 1:
-            action = [2, 0]
+            action = [ax, 0]
         # brake
         elif act == 2:
-            action = [-2, 0]
+            action = [-ax, 0]
         # turn right
         elif act == 3:
-            action = [0, 2]
+            action = [0, ay]
         # turn left
         elif act == 4:
-            action = [0, -2]
+            action = [0, -ay]
         return action
 
     def get_epsilon(self):
@@ -144,6 +146,6 @@ class DDQN:
         torch.save(self.target_net.state_dict(), path)
 
     def load(self, path):
-        self.target_net.load_state_dict(torch.load(path))
+        self.target_net.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
         for target_param, param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             param.data.copy_(target_param.data)

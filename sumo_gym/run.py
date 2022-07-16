@@ -55,6 +55,10 @@ parser.add_argument(
     default=False,
     help='whether to test the model'
 )
+parser.add_argument(
+    '--model_path',
+    help='path of the model to be tested'
+)
 args = parser.parse_args()
 
 with open(args.config, 'r') as f:
