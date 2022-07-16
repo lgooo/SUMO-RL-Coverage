@@ -45,8 +45,8 @@ class DDQN:
         self.batch_size = config.get('batch_size',256)
         self.lr=config.get('lr',0.00005)
         self.memory_size=config.get('memory_size',1e5)
-        self.policy_net = MLP(n_states, n_actions).to(self.device)
-        self.target_net = MLP(n_states, n_actions).to(self.device)
+        self.policy_net = MLP(n_states, n_actions, config.get('network_width', 128)).to(self.device)
+        self.target_net = MLP(n_states, n_actions, config.get('network_width', 128)).to(self.device)
         # initialize target_net and policy_net with same parameters
         for target_param, param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             target_param.data.copy_(param.data)
@@ -141,9 +141,9 @@ class DDQN:
         return loss.item()
 
     def save(self, path):
-        torch.save(self.target_net.state_dict(), path + 'dqn_checkpoint.pth')
+        torch.save(self.target_net.state_dict(), path)
 
     def load(self, path):
-        self.target_net.load_state_dict(torch.load(path + 'dqn_checkpoint.pth'))
+        self.target_net.load_state_dict(torch.load(path))
         for target_param, param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             param.data.copy_(target_param.data)
