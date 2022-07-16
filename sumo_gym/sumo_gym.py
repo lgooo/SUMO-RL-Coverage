@@ -6,6 +6,7 @@ import sys
 from util import add_sumo_path
 from sumo_handler import Sumo
 from util import long_lat_pos_cal
+from util import SumoUtil
 
 add_sumo_path()
 
@@ -348,13 +349,8 @@ class SumoGym(gym.Env):
             ((np.array([1.6, 4.8, 8]) - ego_y) ** 2)
         ) * R.get('off_lane_penalty_factor', 1) # penalize staying off lane
 
-        for i in range(1, len(obs)):
-            present, x, y, vx, vy = obs[i][:5]
-            if not present:
-                continue
-            if np.abs(y - ego_y) < 2: # same lane
-                if ego_x < x and ego_x > x - 10: # too close to the leading vehicle
-                    reward -= R.get('safety_penalty', 10) # discourage getting too close to the leading vehicle
+        if SumoUtil.is_dangerous(obs):
+            reward -= R.get('safety_penalty', 10) # discourage getting too close to the leading vehicle
 
         reward += R.get('alive_bonus', 10) # reward for staying in the game
         return reward
