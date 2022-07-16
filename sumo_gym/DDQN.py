@@ -25,7 +25,8 @@ class MLP(nn.Module):
 
 
 class DDQN:
-    def __init__(self, n_states, n_actions,config, seed):
+    def __init__(self, n_states, n_actions, config, seed):
+        self.config = config
         self.n_actions = n_actions
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if seed is not None:
