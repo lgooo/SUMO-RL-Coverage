@@ -6,6 +6,7 @@ import random
 import math
 import numpy as np
 from util import ExperienceReplay
+from logger import Logger
 
 
 class MLP(nn.Module):
@@ -67,6 +68,7 @@ class DDQN:
         else:
             raise Exception(f'Unsupported optimizer: {optimizer_name}')
         self.memory = ExperienceReplay(capacity=self.memory_size)
+        self.logger = None
 
 
     def continuous_action(self, act):
@@ -115,28 +117,42 @@ class DDQN:
             action = random.randrange(self.n_actions)
         return action
 
+    def set_logger(self, logger):
+        self.logger = logger
+
+    def log(self, message):
+        if self.logger is not None:
+            self.logger.log(message)
+
     def update(self):
         if len(self.memory) < self.batch_size:
             return None
 
         state_batch, action_batch, reward_batch, next_state_batch, done_batch, indices = self.memory.sample(
             self.batch_size)
+        self.log('memory_sample')
         state_batch = torch.tensor(np.array(state_batch), device=self.device, dtype=torch.float)
         action_batch = torch.tensor(action_batch, device=self.device, dtype=torch.int64).unsqueeze(1)
         reward_batch = torch.tensor(reward_batch, device=self.device, dtype=torch.float)
         next_state_batch = torch.tensor(np.array(next_state_batch), device=self.device, dtype=torch.float)
         done_batch = torch.tensor(np.float32(done_batch), device=self.device)
+        self.log('tensor_preparation')
         # Double DQN
         q_values = self.policy_net(state_batch).gather(dim=1, index=action_batch)
+        self.log('calculate_q_values')
         next_q_actions = torch.max(self.policy_net(next_state_batch), dim=1)[1].unsqueeze(1)
+        self.log('calculate_next_q_actions')
         next_q_values = self.target_net(next_state_batch).gather(dim=1, index=next_q_actions).detach().squeeze(1)
+        self.log('calculate_next_q_values')
         expected_q_values = reward_batch + self.gamma * next_q_values * (1 - done_batch)
         loss = nn.MSELoss()(q_values, expected_q_values.unsqueeze(1))
+        self.log('calculate_loss')
         self.optimizer.zero_grad()
         loss.backward()
         for param in self.policy_net.parameters():
             param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
+        self.log('optimizer_step')
 
         if self.frame_idx % self.update_freq == 0:  # update target_net
             self.target_net.load_state_dict(self.policy_net.state_dict())
