@@ -165,6 +165,28 @@ class TestObservation(unittest.TestCase):
         self.assertFalse(sumo_gym.ego_crashed())
         sumo_gym.close()
 
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 0},
+            'v1': {'position': 105, 'lane': 1, 'speed': 0},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        sumo_gym.step((0, 0))
+        self.assertFalse(sumo_gym.ego_crashed())
+        sumo_gym.close()
+
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 0},
+            'v1': {'position': 104.9, 'lane': 1, 'speed': 0},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        sumo_gym.step((0, 0))
+        self.assertTrue(sumo_gym.ego_crashed())
+        sumo_gym.close()
+
 
 if __name__ == '__main__':
     unittest.main()
