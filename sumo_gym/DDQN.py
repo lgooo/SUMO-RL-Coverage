@@ -5,7 +5,7 @@ import torch.optim as optim
 import random
 import math
 import numpy as np
-from util import ExperienceReplay
+from util import Deque
 from logger import Logger
 
 
@@ -67,7 +67,7 @@ class DDQN:
             )
         else:
             raise Exception(f'Unsupported optimizer: {optimizer_name}')
-        self.memory = ExperienceReplay(capacity=self.memory_size)
+        self.memory = Deque(capacity=int(self.memory_size))
         self.logger = None
 
 
@@ -128,8 +128,15 @@ class DDQN:
         if len(self.memory) < self.batch_size:
             return None
 
-        state_batch, action_batch, reward_batch, next_state_batch, done_batch, indices = self.memory.sample(
-            self.batch_size)
+        data = self.memory.sample(self.batch_size)
+        states, actions, rewards, next_states, dones = zip(*data)
+
+        state_batch = np.array(states)
+        action_batch = np.array(actions)
+        reward_batch = np.array(rewards, dtype=np.float32)
+        next_state_batch = np.array(next_states)
+        done_batch = np.array(dones, dtype=np.uint8)
+
         self.log('memory_sample')
         state_batch = torch.tensor(np.array(state_batch), device=self.device, dtype=torch.float)
         action_batch = torch.tensor(action_batch, device=self.device, dtype=torch.int64).unsqueeze(1)
