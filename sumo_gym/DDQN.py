@@ -133,12 +133,13 @@ class DDQN:
         states, actions, rewards, next_states, dones = zip(*data)
         self.log('zip_data')
 
-        state_batch = torch.tensor(states, device=self.device, dtype=torch.float)
+        state_batch = torch.tensor(np.array(states), device=self.device, dtype=torch.float)
         action_batch = torch.tensor(actions, device=self.device, dtype=torch.int64).unsqueeze(1)
         reward_batch = torch.tensor(rewards, device=self.device, dtype=torch.float)
-        next_state_batch = torch.tensor(next_state_batch, device=self.device, dtype=torch.float)
-        done_batch = torch.tensor(done_batch, device=self.device, dtype=torch.float)
+        next_state_batch = torch.tensor(np.array(next_states), device=self.device, dtype=torch.float)
+        done_batch = torch.tensor(dones, device=self.device, dtype=torch.float)
         self.log('tensor_preparation')
+
         # Double DQN
         q_values = self.policy_net(state_batch).gather(dim=1, index=action_batch)
         self.log('calculate_q_values')
