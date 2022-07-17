@@ -129,20 +129,15 @@ class DDQN:
             return None
 
         data = self.memory.sample(self.batch_size)
-        states, actions, rewards, next_states, dones = zip(*data)
-
-        state_batch = np.array(states)
-        action_batch = np.array(actions)
-        reward_batch = np.array(rewards, dtype=np.float32)
-        next_state_batch = np.array(next_states)
-        done_batch = np.array(dones, dtype=np.uint8)
-
         self.log('memory_sample')
-        state_batch = torch.tensor(np.array(state_batch), device=self.device, dtype=torch.float)
-        action_batch = torch.tensor(action_batch, device=self.device, dtype=torch.int64).unsqueeze(1)
-        reward_batch = torch.tensor(reward_batch, device=self.device, dtype=torch.float)
-        next_state_batch = torch.tensor(np.array(next_state_batch), device=self.device, dtype=torch.float)
-        done_batch = torch.tensor(np.float32(done_batch), device=self.device)
+        states, actions, rewards, next_states, dones = zip(*data)
+        self.log('zip_data')
+
+        state_batch = torch.tensor(states, device=self.device, dtype=torch.float)
+        action_batch = torch.tensor(actions, device=self.device, dtype=torch.int64).unsqueeze(1)
+        reward_batch = torch.tensor(rewards, device=self.device, dtype=torch.float)
+        next_state_batch = torch.tensor(next_state_batch, device=self.device, dtype=torch.float)
+        done_batch = torch.tensor(done_batch, device=self.device, dtype=torch.float)
         self.log('tensor_preparation')
         # Double DQN
         q_values = self.policy_net(state_batch).gather(dim=1, index=action_batch)
