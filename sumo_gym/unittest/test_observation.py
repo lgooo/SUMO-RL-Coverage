@@ -14,6 +14,7 @@ from util import SumoUtil
 class TestObservation(unittest.TestCase):
     config1 = {
         'sumo_config': '../sumo/simple.sumocfg',
+        'goal': {'x': 1000},
     }
 
     def test_neighbors(self):
@@ -108,14 +109,60 @@ class TestObservation(unittest.TestCase):
         self.assertTrue(SumoUtil.is_dangerous(obs))
         sumo_gym.close()
 
-    def test_reward(self):
+    def test_crash(self):
         conf = self.config1.copy()
         conf['vehicle_list'] = {
-            'ego': {'position': 100, 'lane': 1, 'speed': 25},
+            'ego': {'position': 100, 'lane': 1, 'speed': 0},
+            'v1': {'position': 100, 'lane': 1, 'speed': 0},
         }
         sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
         sumo_gym.reset()
-        print(sumo_gym._compute_observations())
+        sumo_gym.step((0, 0))
+        self.assertTrue(sumo_gym.ego_crashed())
+        sumo_gym.close()
+
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 0},
+            'v1': {'position': 100, 'lane': 0, 'speed': 0},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        sumo_gym.step((0, 0))
+        self.assertFalse(sumo_gym.ego_crashed())
+        sumo_gym.close()
+
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 0},
+            'v1': {'position': 97, 'lane': 1, 'speed': 0},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        sumo_gym.step((0, 0))
+        self.assertTrue(sumo_gym.ego_crashed())
+        sumo_gym.close()
+
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 0},
+            'v1': {'position': 95.1, 'lane': 1, 'speed': 0},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        sumo_gym.step((0, 0))
+        self.assertTrue(sumo_gym.ego_crashed())
+        sumo_gym.close()
+
+        conf = self.config1.copy()
+        conf['vehicle_list'] = {
+            'ego': {'position': 100, 'lane': 1, 'speed': 0},
+            'v1': {'position': 95, 'lane': 1, 'speed': 0},
+        }
+        sumo_gym = SumoGym(conf, delta_t=0.1, render_flag=False, seed=1)
+        sumo_gym.reset()
+        sumo_gym.step((0, 0))
+        self.assertFalse(sumo_gym.ego_crashed())
         sumo_gym.close()
 
 

@@ -77,6 +77,9 @@ class SumoGym(gym.Env):
 
         return self._compute_observations()
 
+    def ego_crashed(self) -> bool:
+        return C.EGO_ID in self.sumo.sumo_handle.simulation.getCollidingVehiclesIDList()
+
     def _get_features(self, vehID) -> np.ndarray:
         """
         Function to get the position, velocity and length of each vehicle
@@ -289,7 +292,7 @@ class SumoGym(gym.Env):
         if in_road == False or lane_id == "":
             info["debug"] = "Ego-vehicle is out of network"
             return obs, -R.get('off_road_penalty', 10), True, info
-        if C.EGO_ID in self.sumo.sumo_handle.simulation.getCollidingVehiclesIDList():
+        if self.ego_crashed():
             info["debug"] = "A crash happened to the Ego-vehicle"
             return obs, -R.get('crash_penalty', 100), True, info
 
