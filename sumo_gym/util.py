@@ -84,12 +84,12 @@ class SumoUtil:
         present, x, y, vx, vy = veh_state
         if not present:
             return False
-        if np.abs(ego_y - y) < 2 and np.abs(ego_x - x) < 3:
-            # Ego too close to other vehicle
+        if np.abs(ego_y - y) < 2 and np.abs(ego_x - x) < 5.3:
+            # Ego too close to other vehicle longitudinally
             return True
-        if np.abs(ego_y - y) < 2 and ego_x < x and ego_vx > vx:
+        if np.abs(ego_y - y) < 2 and ego_x < x and ego_vx > vx * 0.8:
             # calculate TTC to the leading vehicle
-            ttc = (x - ego_x) / (ego_vx - vx)
+            ttc = (x - ego_x - 5) / (ego_vx - vx * 0.8)
             if ttc <= 2:
                 return True
         return False
