@@ -17,8 +17,6 @@ from collections import defaultdict
 Observation = np.ndarray
 Action = np.ndarray
 
-writer = SummaryWriter()
-
 parser = argparse.ArgumentParser(
     description='SUMO Gym Tester')
 parser.add_argument(
@@ -120,6 +118,8 @@ if not os.path.exists(f'data/{experiment_name}/model'):
     os.makedirs(f'data/{experiment_name}/model')
 
 shutil.copy(args.config, f'data/{experiment_name}/{config_name}.yaml')
+
+writer = SummaryWriter(f'runs/{experiment_name}')
 
 logger = Logger()
 agent.set_logger(logger)
