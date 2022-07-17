@@ -11,6 +11,8 @@ import os
 import sys
 import shutil
 import datetime
+from logger import Logger
+from collections import defaultdict
 
 Observation = np.ndarray
 Action = np.ndarray
@@ -119,6 +121,9 @@ if not os.path.exists(f'data/{experiment_name}/model'):
 
 shutil.copy(args.config, f'data/{experiment_name}/{config_name}.yaml')
 
+logger = Logger()
+agent.set_logger(logger)
+
 for epi in range(args.num_episodes):
     obs = env.reset()
     done = False
@@ -126,15 +131,22 @@ for epi in range(args.num_episodes):
     episode_steps = 0
     max_x = 0
     loss = None
+    log_time_sum = defaultdict(float)
+    log_num = defaultdict(int)
+
     while not done:
+        logger.reset()
         action = policy(obs)
+        logger.log('choose_action')
         next_obs, reward, done, info = env.step(action=agent.continuous_action(action))
+        logger.log('environment_step')
         if not done:
             if obs_filter(next_obs):
                 agent.memory.append(obs, action, reward, next_obs, done)
         else:
             if obs_filter(obs):
                 agent.memory.append(obs, action, reward, obs, done)
+        logger.log('memory_append')
         episode_steps += 1
         episode_reward += reward
         obs = next_obs
@@ -143,11 +155,18 @@ for epi in range(args.num_episodes):
         loss = agent.update()
         if episode_steps > 1000:
             break
+        one_log = logger.digest()
+        for k, v in one_log:
+            log_time_sum[k] += v
+            log_num[k] += 1
     writer.add_scalar('data/step', episode_steps, epi)
     writer.add_scalar('data/x', max_x, epi)
     writer.add_scalar('data/reward', episode_reward, epi)
     writer.add_scalar('data/network-norm', agent.get_norm(), epi)
     writer.add_scalar('data/epsilon', agent.get_epsilon(), epi)
+    for k, v in log_time_sum.items():
+        writer.add_scalar(f'data/profile_{k}', v / log_num[k], epi)
+
     if loss is not None:
         writer.add_scalar('data/loss', loss, epi)
     env.close()
