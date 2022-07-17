@@ -348,6 +348,7 @@ class SumoGym(gym.Env):
             ego_vx - self.config.get('speed_limit', 20)
         ) * R.get('speed_penalty_factor', 1)  # encourage staying close to the speed limit
         reward -= (action[0] ** 2) * R.get('acceleration_penalty_factor', 1) # discourage too much acceleration
+        reward -= np.abs(ego_vy) * R.get('lateral_speed_penalty_factor', 2)
         reward -= np.min(
             ((np.array([1.6, 4.8, 8]) - ego_y) ** 2)
         ) * R.get('off_lane_penalty_factor', 1) # penalize staying off lane
