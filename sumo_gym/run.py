@@ -142,10 +142,10 @@ for epi in range(args.num_episodes):
         logger.log('environment_step')
         if not done:
             if obs_filter(next_obs):
-                agent.memory.append(obs, action, reward, next_obs, done)
+                agent.memory.append((obs, action, reward, next_obs, done))
         else:
             if obs_filter(obs):
-                agent.memory.append(obs, action, reward, obs, done)
+                agent.memory.append((obs, action, reward, obs, done))
         logger.log('memory_append')
         episode_steps += 1
         episode_reward += reward

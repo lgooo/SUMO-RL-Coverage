@@ -95,24 +95,35 @@ class SumoUtil:
         return False
 
 
-class ExperienceReplay:
+class Deque:
     def __init__(self, capacity):
-        self.buffer = collections.deque(maxlen=int(capacity))
+        self.capacity = capacity
+        self._buffer = [None] * capacity
+        self._end = 0
+        self._start = 0
+        self._size = 0
 
     def __len__(self):
-        return len(self.buffer)
+        return self._size
 
-    def append(self, state, action, reward, next_state, done):
-        experience = (state, action, reward, next_state, done)
-        self.buffer.append(experience)
+    def __setitem__(self, index, data):
+        assert index < self._size
+        self._buffer[(index + self._start) % self.capacity] = data
+
+    def __getitem__(self, index):
+        assert index < self._size
+        return self._buffer[(index + self._start) % self.capacity]
+
+    def append(self, data):
+        self._buffer[self._end] = data
+        if self._size == self.capacity:
+            self._start = (self._start + 1) % self.capacity
+        else:
+            self._size += 1
+        self._end = (self._end + 1) % self.capacity
 
     def sample(self, batch_size):
-        indices = np.random.choice(len(self.buffer), batch_size,
-                                   replace=False)
+        assert self._size >= batch_size
+        indices = np.random.choice(self._size, batch_size, replace=False)
 
-        states, actions, rewards, next_states, dones = zip(*[self.buffer[idx] for idx in indices])
-
-        return np.array(states), np.array(actions), \
-               np.array(rewards, dtype=np.float32), \
-               np.array(next_states),\
-               np.array(dones, dtype=np.uint8),indices
+        return [self.__getitem__(index) for index in indices]
