@@ -3,6 +3,7 @@ import sys
 import math
 import collections
 import numpy as np
+import pickle
 
 def add_sumo_path():
     if "SUMO_HOME" in os.environ:
@@ -59,6 +60,8 @@ def long_lat_pos_cal(angle, acc_y, distance, heading):
     return dx, dy
 
 
+
+
 class SumoUtil:
     @staticmethod
     def is_dangerous(obs) -> bool:
@@ -93,6 +96,38 @@ class SumoUtil:
             if ttc <= 2:
                 return True
         return False
+
+class dangerous_pair_counter:
+    def __init__(self):
+        self.counter = {}
+
+    def __len__(self):
+        return len(self.counter)
+
+    def discretized(self,state_pair):
+        for i in range(len(state_pair)):
+            state_pair[i]=math.floor(state_pair[i])
+        return state_pair
+
+    def append_pair(self,ego_state, veh_state):
+        #record y, vx,vy for ego, and x,v,vx,vy for veh
+        state_pair=np.concatenate((ego_state[2:],veh_state[1:]))
+        state_pair=tuple(self.discretized(state_pair))
+        self.counter[state_pair]=self.counter.get(state_pair,0)+1
+
+    def count_dangerous(self,obs):
+        assert obs.shape == (7, 5)
+        ego_state = obs[0, :]
+        for i in range(obs.shape[0]):
+            if i == 0:
+                continue
+            veh_state = obs[i, :]
+            if SumoUtil.is_dangerous_pair(ego_state, veh_state):
+                self.append_pair(ego_state,veh_state)
+
+    def save(self,experiment_name):
+        with open(f'data/{experiment_name}/dangerous_pairs.pkl', "wb") as outfile:
+            pickle.dump(self.counter, outfile)
 
 
 class Deque:

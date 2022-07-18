@@ -13,6 +13,7 @@ import shutil
 import datetime
 from logger import Logger
 from collections import defaultdict
+import util
 
 Observation = np.ndarray
 Action = np.ndarray
@@ -123,6 +124,7 @@ writer = SummaryWriter(f'runs/{experiment_name}')
 
 logger = Logger()
 agent.set_logger(logger)
+counter=util.dangerous_pair_counter()
 
 for epi in range(args.num_episodes):
     obs = env.reset()
@@ -143,6 +145,7 @@ for epi in range(args.num_episodes):
         if not done:
             if obs_filter(next_obs):
                 agent.memory.append((obs, action, reward, next_obs, done))
+                counter.count_dangerous(next_obs)
         else:
             if obs_filter(obs):
                 agent.memory.append((obs, action, reward, obs, done))
@@ -164,6 +167,7 @@ for epi in range(args.num_episodes):
     writer.add_scalar('data/reward', episode_reward, epi)
     writer.add_scalar('data/network-norm', agent.get_norm(), epi)
     writer.add_scalar('data/epsilon', agent.get_epsilon(), epi)
+    writer.add_scalar('data/dangerous-states', len(counter), epi)
     for k, v in log_time_sum.items():
         writer.add_scalar(f'data/profile_{k}', v / log_num[k], epi)
 
@@ -174,3 +178,5 @@ for epi in range(args.num_episodes):
     # save model every 100 episodes
     if (epi + 1) % 100 == 0:
         agent.save(f'data/{experiment_name}/model/{epi + 1}.pth')
+
+counter.save(experiment_name)
