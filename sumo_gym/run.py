@@ -126,7 +126,7 @@ agent.set_logger(logger)
 
 for epi in range(args.num_episodes):
     obs = env.reset()
-    done = False
+    terminate = False
     episode_reward = 0
     episode_steps = 0
     max_x = 0
@@ -134,11 +134,11 @@ for epi in range(args.num_episodes):
     log_time_sum = defaultdict(float)
     log_num = defaultdict(int)
 
-    while not done:
+    while not terminate:
         logger.reset()
         action = policy(obs)
         logger.log('choose_action')
-        next_obs, reward, done, info = env.step(action=agent.continuous_action(action))
+        next_obs, reward, terminate, done, info = env.step(action=agent.continuous_action(action))
         logger.log('environment_step')
         if not done:
             if obs_filter(next_obs):
