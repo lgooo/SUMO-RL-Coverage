@@ -5,7 +5,7 @@ import argparse
 from sumo_gym import SumoGym
 import numpy as np
 import yaml
-from alg.DDQN import DDQN
+from alg.alg import Alg
 from tensorboardX import SummaryWriter
 import os
 import sys
@@ -62,7 +62,9 @@ env = SumoGym(
     seed=args.seed
 )
 
-agent = DDQN(n_states=35, n_actions=5,config=conf['alg'], seed=args.seed)
+agent = Alg.create(conf['alg'])
+if args.seed is not None:
+    agent.set_seed(args.seed)
 
 def obs_filter(obs:Observation):
     if len(obs):
