@@ -15,6 +15,9 @@ from logger import Logger
 from collections import defaultdict
 import util
 
+# hack
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 Observation = np.ndarray
 Action = np.ndarray
 
