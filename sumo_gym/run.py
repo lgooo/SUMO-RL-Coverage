@@ -5,7 +5,7 @@ import argparse
 from sumo_gym import SumoGym
 import numpy as np
 import yaml
-from DDQN import DDQN
+from alg.DDQN import DDQN
 from tensorboardX import SummaryWriter
 import os
 import sys
