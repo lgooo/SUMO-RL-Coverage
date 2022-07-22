@@ -51,12 +51,6 @@ parser.add_argument(
     help='random seed',
 )
 parser.add_argument(
-    '--test',
-    action='store_true',
-    default=False,
-    help='whether to test the model'
-)
-parser.add_argument(
     '--model_path',
     help='path of the model to be tested'
 )
@@ -91,26 +85,6 @@ def obs_filter(obs:Observation):
 def policy(obs: Observation) -> Action:
     return agent.choose_action(obs)
 
-if args.test:
-    env.render_flag = True
-    agent.load(args.model_path)
-    # no e-greedy
-    agent.epsilon_start = 0
-    agent.epsilon_end = 0
-    for _ in range(5):
-        obs = env.reset()
-        terminate = False
-        episode_reward = 0
-        episode_steps = 0
-        while not terminate:
-            action = policy(obs)
-            obs, reward, terminate, done, info = env.step(action=agent.continuous_action(action))
-            episode_steps += 1
-            episode_reward += reward
-        env.close()
-        print("Steps: {}, Reward: {}".format(episode_steps, episode_reward))
-    sys.exit(0)
-
 experiment_name = args.experiment
 config_name = args.config.split('/')[-1].rsplit('.', 1)[0]
 if not experiment_name:
@@ -142,15 +116,15 @@ for epi in range(args.num_episodes):
         logger.reset()
         action = policy(obs)
         logger.log('choose_action')
-        next_obs, reward, terminate, done, info = env.step(action=agent.continuous_action(action))
+        next_obs, (reward, out_of_lane, crash), terminate, done, info = env.step(action=agent.continuous_action(action))
         logger.log('environment_step')
         if not done:
             if obs_filter(next_obs):
-                agent.memory.append((obs, action, reward, next_obs, done))
+                agent.memory.append((obs, action, reward, out_of_lane, crash, next_obs, done))
                 counter.count_dangerous(next_obs)
         else:
             if obs_filter(obs):
-                agent.memory.append((obs, action, reward, obs, done))
+                agent.memory.append((obs, action, reward, out_of_lane, crash, obs, done))
         logger.log('memory_append')
         episode_steps += 1
         episode_reward += reward

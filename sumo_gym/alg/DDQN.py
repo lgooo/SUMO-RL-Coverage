@@ -7,6 +7,7 @@ import math
 import numpy as np
 from util import Deque
 from logger import Logger
+from alg.alg import Alg
 
 
 class MLP(nn.Module):
@@ -25,7 +26,7 @@ class MLP(nn.Module):
         return self.fc4(x)
 
 
-class DDQN:
+class DDQN(Alg):
     def __init__(self, n_states, n_actions, config):
         self.config = config
         self.n_actions = n_actions
@@ -118,18 +119,30 @@ class DDQN:
         if self.logger is not None:
             self.logger.log(message)
 
+    def calculate_reward(self, reward, off_road, crash):
+        R = self.config.get('reward', {})
+        return (
+            reward
+            - R.get('off_road_penalty', 10) * off_road
+            - R.get('crash_penalty', 100) * crash
+        )
+
     def update(self):
         if len(self.memory) < self.batch_size:
             return None
 
         data = self.memory.sample(self.batch_size)
         self.log('memory_sample')
-        states, actions, rewards, next_states, dones = zip(*data)
+        states, actions, rewards, off_roads, crashes, next_states, dones = zip(*data)
         self.log('zip_data')
 
         state_batch = torch.tensor(np.array(states), device=self.device, dtype=torch.float)
         action_batch = torch.tensor(actions, device=self.device, dtype=torch.int64).unsqueeze(1)
-        reward_batch = torch.tensor(rewards, device=self.device, dtype=torch.float)
+        reward_batch = self.calculate_reward(
+            torch.tensor(rewards, device=self.device, dtype=torch.float),
+            torch.tensor(off_roads, device=self.device, dtype=torch.float),
+            torch.tensor(crashes, device=self.device, dtype=torch.float),
+        )
         next_state_batch = torch.tensor(np.array(next_states), device=self.device, dtype=torch.float)
         done_batch = torch.tensor(dones, device=self.device, dtype=torch.float)
         self.log('tensor_preparation')

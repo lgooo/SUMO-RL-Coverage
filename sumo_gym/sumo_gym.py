@@ -266,14 +266,10 @@ class SumoGym(gym.Env):
 
         return True, dx, dy, speed, line, vx, vy, acc_x, acc_y, long_distance, lat_distance
 
-    def step(self, action: Action) -> Tuple[dict, float, bool, bool, dict]:
+    def step(self, action: Action):
         """
         Function to take a single step in the simulation based on action for the ego-vehicle
         """
-        # next state, reward, done (bool), info (dict)
-        # dict --> useful info in event of crash or out-of-network
-        # bool --> false default, true when finishes episode/sims
-        # float --> reward = user defined func -- Zero for now (Compute reward functionality)
 
         reward = self.reward(action)
 
@@ -291,10 +287,10 @@ class SumoGym(gym.Env):
         # sim check before traci update
         if in_road == False or lane_id == "":
             info['out_of_road'] = True
-            return obs, -R.get('off_road_penalty', 10), True, True, info
+            return obs, (reward, 1, 0), True, True, info
         if self.ego_crashed():
             info['crash'] = True
-            return obs, -R.get('crash_penalty', 100), True, True, info
+            return obs, (reward, 0, 1), True, True, info
 
         # update lane_x and lane_y (based on true value instead of ego_state)
         y = traci.vehicle.getLateralLanePosition(C.EGO_ID)
@@ -321,14 +317,14 @@ class SumoGym(gym.Env):
         self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
 
         if self.check_goal(self.ego_state):
-            return [], R.get('goal_bonus', 0), True, False, info
+            return [], (reward + R.get('goal_bonus', 0), 0, 0), True, False, info
         # update sumo with new ego state
         self.sumo.step()
 
         # compute next state observation
         obs = self._compute_observations()
 
-        return obs, reward, False, False, info
+        return obs, (reward, 0, 0), False, False, info
 
     def check_goal(self, ego_state):
         return self.config['goal']['x'] <= ego_state['x']
