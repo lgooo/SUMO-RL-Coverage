@@ -9,8 +9,6 @@ env:
         x: 800
     reward:
         goal_bonus: 0
-        crash_penalty: 100
-        off_road_penalty: 16
         off_lane_penalty_factor: 1
         speed_penalty_factor: 1
         acceleration_penalty_factor: 1
@@ -32,3 +30,6 @@ alg:
     optimizer: adam
     weight_decay: 0.01
     lr: 0.00001
+    reward:
+        crash_penalty: 100
+        off_road_penalty: 16
