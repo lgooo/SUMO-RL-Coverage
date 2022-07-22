@@ -4,24 +4,31 @@ env:
     vehicle_speed_mean: 25
     vehicle_speed_variation: 2
     num_random_vehicles: 20
+    vehicle_time_gap: 5.0
     goal:
-        x: 1000
+        x: 800
     reward:
         goal_bonus: 0
         crash_penalty: 100
-        off_road_penalty: 10
+        off_road_penalty: 16
         off_lane_penalty_factor: 1
         speed_penalty_factor: 1
         acceleration_penalty_factor: 1
-        alive_bonus: 10
+        lateral_speed_penalty_factor: 3
+        alive_bonus: 8
         safety_penalty: 10
-
 alg:
     name: ddqn
+    action_x_acc: 2
+    action_y_acc: 1
     gamma: 0.99
     epsilon_start: 1.0
-    epsilon_end: 0.1
-    epsilon_decay: 500
-    update_freq: 512
-    batch_size: 256
-    lr: 0.00005
+    epsilon_end: 0.05
+    epsilon_decay: 100000
+    update_freq: 128
+    batch_size: 4096
+    network_width: 256
+    memory_size: 200000
+    optimizer: adam
+    weight_decay: 0.01
+    lr: 0.00001

@@ -26,16 +26,10 @@ class MLP(nn.Module):
 
 
 class DDQN:
-    def __init__(self, n_states, n_actions, config, seed):
+    def __init__(self, n_states, n_actions, config):
         self.config = config
         self.n_actions = n_actions
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if seed is not None:
-            random.seed(seed)
-            np.random.seed(seed)
-            torch.manual_seed(seed)
-            torch.cuda.manual_seed(seed)
-            torch.cuda.manual_seed_all(seed)
         self.gamma = config.get('gamma',0.99)
         # epsilon-greedy
         self.frame_idx = 0

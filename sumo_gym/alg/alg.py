@@ -1,0 +1,27 @@
+import numpy as np
+import random
+import torch
+
+class Alg:
+    @staticmethod
+    def create(config):
+        if config['name'] == 'ddqn':
+            from alg.ddqn import DDQN
+            num_states = config.get('num_states', 35)
+            num_actions = config.get('num_actions', 5)
+            return DDQN(num_states, num_actions, config)
+
+        if config['name'] == 'safe_ddqn':
+            from alg.safe_ddqn import SafeDDQN
+            num_states = config.get('num_states', 35)
+            num_actions = config.get('num_actions', 5)
+            return SafeDDQN(num_states, num_actions, config)
+
+
+    def set_seed(self, seed):
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
