@@ -54,6 +54,12 @@ parser.add_argument(
     '--model_path',
     help='path of the model to be tested'
 )
+parser.add_argument(
+    '--profile',
+    action='store_true',
+    default=False,
+    help='whether to profile performance',
+)
 args = parser.parse_args()
 
 with open(args.config, 'r') as f:
@@ -98,7 +104,7 @@ shutil.copy(args.config, f'data/{experiment_name}/{config_name}.yaml')
 
 writer = SummaryWriter(f'runs/{experiment_name}')
 
-logger = Logger()
+logger = Logger(args.profile)
 agent.set_logger(logger)
 counter=util.dangerous_pair_counter()
 
@@ -121,15 +127,15 @@ for epi in range(args.num_episodes):
             first = False
 
         logger.log('choose_action')
-        next_obs, (reward, out_of_lane, crash), terminate, done, info = env.step(action=agent.continuous_action(action))
+        next_obs, reward, safety, terminate, done, info = env.step(action=agent.continuous_action(action))
         logger.log('environment_step')
         if not done:
             if obs_filter(next_obs):
-                agent.memory.append((obs, action, reward, out_of_lane, crash, next_obs, done))
+                agent.memory.append((obs, action, reward, safety, next_obs, done))
                 counter.count_dangerous(next_obs)
         else:
             if obs_filter(obs):
-                agent.memory.append((obs, action, reward, out_of_lane, crash, obs, done))
+                agent.memory.append((obs, action, reward, safety, obs, done))
         logger.log('memory_append')
         episode_steps += 1
         episode_reward += reward
@@ -150,8 +156,10 @@ for epi in range(args.num_episodes):
     writer.add_scalar('data/epsilon', agent.get_epsilon(), epi)
     writer.add_scalar('data/dangerous-states', len(counter), epi)
     agent.log_tensorboard(writer, epi)
-    for k, v in log_time_sum.items():
-        writer.add_scalar(f'data/profile_{k}', v / log_num[k], epi)
+
+    if args.profile:
+        for k, v in log_time_sum.items():
+            writer.add_scalar(f'data/profile_{k}', v / log_num[k], epi)
 
     if loss is not None:
         writer.add_scalar('data/loss', loss, epi)

@@ -287,10 +287,10 @@ class SumoGym(gym.Env):
         # sim check before traci update
         if in_road == False or lane_id == "":
             info['out_of_road'] = True
-            return obs, (reward, 1, 0), True, True, info
+            return obs, reward, {'off_road': 1, 'crash': 0}, True, True, info
         if self.ego_crashed():
             info['crash'] = True
-            return obs, (reward, 0, 1), True, True, info
+            return obs, reward, {'off_road': 0, 'crash': 1}, True, True, info
 
         # update lane_x and lane_y (based on true value instead of ego_state)
         y = traci.vehicle.getLateralLanePosition(C.EGO_ID)
@@ -317,14 +317,14 @@ class SumoGym(gym.Env):
         self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
 
         if self.check_goal(self.ego_state):
-            return [], (reward + R.get('goal_bonus', 0), 0, 0), True, False, info
+            return [], reward + R.get('goal_bonus', 0), {'off_road': 0, 'crash': 0}, True, False, info
         # update sumo with new ego state
         self.sumo.step()
 
         # compute next state observation
         obs = self._compute_observations()
 
-        return obs, (reward, 0, 0), False, False, info
+        return obs, reward, {'off_road': 0, 'crash': 0}, False, False, info
 
     def check_goal(self, ego_state):
         return self.config['goal']['x'] <= ego_state['x']

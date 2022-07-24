@@ -30,11 +30,13 @@ alg:
     optimizer: adam
     weight_decay: 0.01
     lr: 0.00001
+    lambda_learning_rate: 0.1
+    lambda_update_start_episode: 100
+    lambda_update_freq: 16
     safety:
-        alpha: 0.1
-        min_num_initial_states_for_lambda_update: 100
-        lambda_off_road: 100
-        lambda_crash: 100
-        crash_threshold: 0.001
-        off_road_threshold: 0.001
-        lambda_update_freq: 16
+        crash:
+            lambda: 100
+            threshold: 0.001
+        off_road:
+            lambda: 100
+            threshold: 0.001

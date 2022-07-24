@@ -100,6 +100,5 @@ for _ in range(args.num_episodes):
         if info.get('out_of_road'):
             num_out_of_roads += 1
         episode_steps += 1
-        episode_reward += reward
     env.close()
 print(num_crashes / args.num_episodes)

@@ -119,15 +119,14 @@ class DDQN(Alg):
         if self.logger is not None:
             self.logger.log(message)
 
-    def calculate_reward(self, reward, off_road, crash):
+    def calculate_reward(self, reward, safety):
         R = self.config.get('reward', {})
-        return (
-            reward
-            - R.get('off_road_penalty', 10) * off_road
-            - R.get('crash_penalty', 100) * crash
-        )
+        ret = reward
+        for k, v in safety.items():
+            ret -= v * R.get(k, 0)
+        return ret
 
-    def cost_network_update(self, state_batch, action_batch, next_state_batch, next_q_actions, off_roads, crashes, done_batch):
+    def cost_network_update(self, state_batch, action_batch, next_state_batch, next_q_actions, safety_batches, done_batch):
         pass
 
     def update(self):
@@ -136,17 +135,20 @@ class DDQN(Alg):
 
         data = self.memory.sample(self.batch_size)
         self.log('memory_sample')
-        states, actions, rewards, off_roads, crashes, next_states, dones = zip(*data)
+        states, actions, rewards, safety_data, next_states, dones = zip(*data)
+        safety_batches = {}
+        for k in safety_data[0].keys():
+            safety_batches[k] = torch.tensor(
+                list(map(lambda x: x[k], safety_data)),
+                device=self.device,
+                dtype=torch.float)
         self.log('zip_data')
 
         state_batch = torch.tensor(np.array(states), device=self.device, dtype=torch.float)
         action_batch = torch.tensor(actions, device=self.device, dtype=torch.int64).unsqueeze(1)
-        off_road_batch = torch.tensor(off_roads, device=self.device, dtype=torch.float)
-        crash_batch = torch.tensor(crashes, device=self.device, dtype=torch.float)
         reward_batch = self.calculate_reward(
             torch.tensor(rewards, device=self.device, dtype=torch.float),
-            off_road_batch,
-            crash_batch,
+            safety_batches,
         )
         next_state_batch = torch.tensor(np.array(next_states), device=self.device, dtype=torch.float)
         done_batch = torch.tensor(dones, device=self.device, dtype=torch.float)
@@ -177,8 +179,7 @@ class DDQN(Alg):
             action_batch,
             next_state_batch,
             next_q_actions,
-            off_road_batch,
-            crash_batch,
+            safety_batches,
             done_batch)
 
         return loss.item()
