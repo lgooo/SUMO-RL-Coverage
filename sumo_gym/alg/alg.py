@@ -5,6 +5,7 @@ import torch
 class Alg:
     @staticmethod
     def create(config):
+        # TODO: proper implementation of factory
         if config['name'] == 'ddqn':
             from alg.ddqn import DDQN
             num_states = config.get('num_states', 35)

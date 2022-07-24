@@ -115,9 +115,14 @@ for epi in range(args.num_episodes):
     log_time_sum = defaultdict(float)
     log_num = defaultdict(int)
 
+    first = True
     while not terminate:
         logger.reset()
         action = policy(obs)
+        if first and hasattr(agent, 'initial_state_memory'):
+            agent.initial_state_memory.append((obs, action))
+            first = False
+
         logger.log('choose_action')
         next_obs, (reward, out_of_lane, crash), terminate, done, info = env.step(action=agent.continuous_action(action))
         logger.log('environment_step')
@@ -147,6 +152,7 @@ for epi in range(args.num_episodes):
     writer.add_scalar('data/network-norm', agent.get_norm(), epi)
     writer.add_scalar('data/epsilon', agent.get_epsilon(), epi)
     writer.add_scalar('data/dangerous-states', len(counter), epi)
+    agent.log_tensorboard(writer, epi)
     for k, v in log_time_sum.items():
         writer.add_scalar(f'data/profile_{k}', v / log_num[k], epi)
 

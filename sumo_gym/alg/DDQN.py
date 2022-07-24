@@ -127,6 +127,9 @@ class DDQN(Alg):
             - R.get('crash_penalty', 100) * crash
         )
 
+    def cost_network_update(self, state_batch, action_batch, next_state_batch, next_q_actions, off_roads, crashes, done_batch):
+        pass
+
     def update(self):
         if len(self.memory) < self.batch_size:
             return None
@@ -138,10 +141,12 @@ class DDQN(Alg):
 
         state_batch = torch.tensor(np.array(states), device=self.device, dtype=torch.float)
         action_batch = torch.tensor(actions, device=self.device, dtype=torch.int64).unsqueeze(1)
+        off_road_batch = torch.tensor(off_roads, device=self.device, dtype=torch.float)
+        crash_batch = torch.tensor(crashes, device=self.device, dtype=torch.float)
         reward_batch = self.calculate_reward(
             torch.tensor(rewards, device=self.device, dtype=torch.float),
-            torch.tensor(off_roads, device=self.device, dtype=torch.float),
-            torch.tensor(crashes, device=self.device, dtype=torch.float),
+            off_road_batch,
+            crash_batch,
         )
         next_state_batch = torch.tensor(np.array(next_states), device=self.device, dtype=torch.float)
         done_batch = torch.tensor(dones, device=self.device, dtype=torch.float)
@@ -167,6 +172,15 @@ class DDQN(Alg):
         if self.frame_idx % self.update_freq == 0:  # update target_net
             self.target_net.load_state_dict(self.policy_net.state_dict())
 
+        self.cost_network_update(
+            state_batch,
+            action_batch,
+            next_state_batch,
+            next_q_actions,
+            off_road_batch,
+            crash_batch,
+            done_batch)
+
         return loss.item()
 
     def save(self, path):
@@ -176,3 +190,6 @@ class DDQN(Alg):
         self.target_net.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
         for target_param, param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             param.data.copy_(target_param.data)
+
+    def log_tensorboard(self, writer, epi):
+        pass
