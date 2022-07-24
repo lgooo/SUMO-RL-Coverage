@@ -93,7 +93,7 @@ class SafeDDQN(DDQN):
         action_batch = torch.tensor(actions, device=self.device, dtype=torch.int64).unsqueeze(1)
 
         for k in self.safety_lambdas.keys():
-            values = self.safety_nets(state_batch).gather(dim=1, index=action_batch)
+            values = self.safety_nets[k](state_batch).gather(dim=1, index=action_batch)
             self.safety_lambdas[k] += self.alpha * (values.mean().item() - self.safety_thresholds[k])
             self.safety_lambdas[k] = max(0, self.safety_lambdas[k])
 
