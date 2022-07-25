@@ -322,6 +322,10 @@ class SumoGym(gym.Env):
         # compute next state observation
         obs = self._compute_observations()
 
+        if SumoUtil.is_off_road(obs):
+            info['out_of_road'] = True
+            return obs, reward, {'near_off_road': 1, 'off_road': 1, 'near_crash': 0, 'crash': 0}, True, True, info
+
         # TODO: use new ego state for checking goal
         if self.check_goal(self._get_features(C.EGO_ID)):
             safety = {
@@ -330,7 +334,7 @@ class SumoGym(gym.Env):
                 'near_crash': int(SumoUtil.is_dangerous(obs)),
                 'crash': 0,
             }
-            return [], reward + R.get('goal_bonus', 0), safety, True, False, info
+            return obs, reward + R.get('goal_bonus', 0), safety, True, False, info
 
         safety = {
             'near_off_road': int(SumoUtil.is_near_off_road(obs)),
