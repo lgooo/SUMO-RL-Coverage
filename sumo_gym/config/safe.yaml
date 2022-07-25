@@ -30,7 +30,7 @@ alg:
     optimizer: adam
     weight_decay: 0.01
     lr: 0.00001
-    lambda_learning_rate: 0.1
+    lambda_learning_rate: 1
     lambda_update_start_episode: 100
     lambda_update_freq: 16
     safety:

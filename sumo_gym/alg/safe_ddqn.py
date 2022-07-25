@@ -58,8 +58,8 @@ class SafeDDQN(DDQN):
         self.initial_state_memory = Deque(capacity=int(self.memory_size))
 
         safety_config = self.config.get('safety', {})
-        self.lambda_update_start_episode = safety_config.get('lambda_update_start_episode', 100)
-        self.alpha = safety_config.get('alpha', 0.01)
+        self.lambda_update_start_episode = config.get('lambda_update_start_episode', 100)
+        self.lambda_learning_rate = config.get('lambda_learning_rate', 0.01)
         self.lambda_update_freq = safety_config.get('lambda_update_freq', 100)
 
     def calculate_reward(self, reward, safety):
@@ -94,8 +94,9 @@ class SafeDDQN(DDQN):
 
         for k in self.safety_lambdas.keys():
             values = self.safety_nets[k](state_batch).gather(dim=1, index=action_batch)
-            self.safety_lambdas[k] += self.alpha * (values.mean().item() - self.safety_thresholds[k])
+            self.safety_lambdas[k] += self.lambda_learning_rate * (values.mean().item() - self.safety_thresholds[k])
             self.safety_lambdas[k] = max(0, self.safety_lambdas[k])
+        print(self.safety_lambdas)
 
     def log_tensorboard(self, writer, epi):
         for k, v in self.safety_lambdas.items():
