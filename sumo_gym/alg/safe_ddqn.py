@@ -96,7 +96,6 @@ class SafeDDQN(DDQN):
             values = self.safety_nets[k](state_batch).gather(dim=1, index=action_batch)
             self.safety_lambdas[k] += self.lambda_learning_rate * (values.mean().item() - self.safety_thresholds[k])
             self.safety_lambdas[k] = max(0, self.safety_lambdas[k])
-        print(self.safety_lambdas)
 
     def log_tensorboard(self, writer, epi):
         for k, v in self.safety_lambdas.items():

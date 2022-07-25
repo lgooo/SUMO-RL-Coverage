@@ -8,5 +8,5 @@ env:
         x: 1000
     reward:
         goal: 0
-        crash: -100
-        off_road: -10
+        crash: 100
+        off_road: 10

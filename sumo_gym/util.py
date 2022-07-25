@@ -97,6 +97,14 @@ class SumoUtil:
                 return True
         return False
 
+    @staticmethod
+    def is_near_off_road(obs) -> bool:
+        assert obs.shape == (7, 5)
+
+        ego_state = obs[0, :]
+        _, ego_x, ego_y, ego_vx, ego_vy = ego_state
+        return ego_y < 1.1 or ego_y > 8.5
+
 class dangerous_pair_counter:
     def __init__(self):
         self.counter = {}

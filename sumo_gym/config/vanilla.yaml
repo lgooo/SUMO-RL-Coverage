@@ -24,12 +24,12 @@ alg:
     epsilon_end: 0.05
     epsilon_decay: 100000
     update_freq: 128
-    batch_size: 4096
+    batch_size: 8
     network_width: 256
     memory_size: 200000
     optimizer: adam
     weight_decay: 0.01
     lr: 0.00001
     reward:
-        crash_penalty: 100
-        off_road_penalty: 16
+        crash: 100
+        off_road: 16
