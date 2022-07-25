@@ -316,8 +316,14 @@ class SumoGym(gym.Env):
         self.ego_state['vx'], self.ego_state['vy'] = vx, vy
         self.ego_state['ax'], self.ego_state['ay'] = acc_x, acc_y
 
-        # TODO: move this check after a sumo step
-        if self.check_goal(self.ego_state):
+        # update sumo with new ego state
+        self.sumo.step()
+
+        # compute next state observation
+        obs = self._compute_observations()
+
+        # TODO: use new ego state for checking goal
+        if self.check_goal(self._get_features(C.EGO_ID)):
             safety = {
                 'near_off_road': int(SumoUtil.is_near_off_road(obs)),
                 'off_road': 0,
@@ -325,11 +331,6 @@ class SumoGym(gym.Env):
                 'crash': 0,
             }
             return [], reward + R.get('goal_bonus', 0), safety, True, False, info
-        # update sumo with new ego state
-        self.sumo.step()
-
-        # compute next state observation
-        obs = self._compute_observations()
 
         safety = {
             'near_off_road': int(SumoUtil.is_near_off_road(obs)),
@@ -339,8 +340,8 @@ class SumoGym(gym.Env):
         }
         return obs, reward, safety, False, False, info
 
-    def check_goal(self, ego_state):
-        return self.config['goal']['x'] <= ego_state['x']
+    def check_goal(self, ego_features):
+        return self.config['goal']['x'] <= ego_features[1]
 
     def reward(self, action: Action) -> float:
         """
@@ -363,7 +364,7 @@ class SumoGym(gym.Env):
         ) * R.get('off_lane_penalty_factor', 1) # penalize staying off lane
 
         if SumoUtil.is_dangerous(obs):
-            reward -= R.get('safety_penalty', 10) # discourage getting too close to the leading vehicle
+            reward -= R.get('safety_penalty', 0) # discourage getting too close to the leading vehicle
 
         reward += R.get('alive_bonus', 10) # reward for staying in the game
         return reward
