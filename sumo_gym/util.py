@@ -1,7 +1,7 @@
 import os
 import sys
 import math
-import collections
+from collections import namedtuple
 import numpy as np
 import pickle
 
@@ -147,8 +147,10 @@ class dangerous_pair_counter:
 
 
 class Deque:
-    def __init__(self, capacity):
+    def __init__(self, capacity, multi_steps=1):
         self.capacity = capacity
+        self.gamma = 0.99
+        self.multi_steps = multi_steps
         self._buffer = [None] * capacity
         self._end = 0
         self._start = 0
@@ -177,4 +179,33 @@ class Deque:
         assert self._size >= batch_size
         indices = np.random.choice(self._size, batch_size, replace=False)
 
-        return [self.__getitem__(index) for index in indices]
+        samples=[self.__getitem__(index) for index in indices]
+
+        obs=[]
+        action=[]
+        rewards=[]
+        safety=[]
+        next_obs=[]
+        dones=[]
+
+        for t in samples:
+            obs.append(t.obs)
+            action.append(t.action)
+            rewards.append(t.reward)
+            safety.append(t.safety)
+            next_obs.append(t.next_obs)
+            dones.append(t.done)
+
+        for i in range(batch_size):
+            for n in range(1,self.multi_steps):
+                if indices[i]+n < self._size:
+                    rewards[i] += (self.gamma ** n) * self.__getitem__(indices[i]+n).reward
+                    next_obs[i] = self.__getitem__(indices[i] + n).next_obs
+                    if self.__getitem__(indices[i] + n).done:
+                        dones[i] = True
+                        break
+
+        return obs,action,rewards,safety, next_obs, dones
+
+
+        return samples

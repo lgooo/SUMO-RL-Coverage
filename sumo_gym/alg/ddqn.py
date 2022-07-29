@@ -42,6 +42,7 @@ class DDQN(Alg):
         self.batch_size = config.get('batch_size',256)
         self.lr=config.get('lr',0.00005)
         self.memory_size=config.get('memory_size',1e5)
+        self.multi_steps=config.get('multi_steps', 1)
         self.policy_net = MLP(n_states, n_actions, config.get('network_width', 128)).to(self.device)
         self.target_net = MLP(n_states, n_actions, config.get('network_width', 128)).to(self.device)
         # initialize target_net and policy_net with same parameters
@@ -62,7 +63,7 @@ class DDQN(Alg):
             )
         else:
             raise Exception(f'Unsupported optimizer: {optimizer_name}')
-        self.memory = Deque(capacity=int(self.memory_size))
+        self.memory = Deque(capacity=int(self.memory_size), multi_steps=self.multi_steps)
         self.logger = None
 
 
@@ -133,9 +134,8 @@ class DDQN(Alg):
         if len(self.memory) < self.batch_size:
             return None
 
-        data = self.memory.sample(self.batch_size)
+        states, actions, rewards, safety_data, next_states, dones = self.memory.sample(self.batch_size)
         self.log('memory_sample')
-        states, actions, rewards, safety_data, next_states, dones = zip(*data)
         safety_batches = {}
         for k in safety_data[0].keys():
             safety_batches[k] = torch.tensor(

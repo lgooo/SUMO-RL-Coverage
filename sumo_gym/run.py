@@ -13,6 +13,7 @@ import shutil
 import datetime
 from logger import Logger
 from collections import defaultdict
+from collections import namedtuple
 import util
 
 Observation = np.ndarray
@@ -30,7 +31,7 @@ parser.add_argument(
 parser.add_argument(
     '--num_episodes',
     type=int,
-    default=500,
+    default=1000,
     help='number of episodes to run'
 )
 parser.add_argument(
@@ -91,6 +92,8 @@ def obs_filter(obs:Observation):
 def policy(obs: Observation) -> Action:
     return agent.choose_action(obs)
 
+
+experience_tuple = namedtuple('experience','obs action reward safety next_obs done')
 experiment_name = args.experiment
 config_name = args.config.split('/')[-1].rsplit('.', 1)[0]
 if not experiment_name:
@@ -131,11 +134,11 @@ for epi in range(args.num_episodes):
         logger.log('environment_step')
         if not done:
             if obs_filter(next_obs):
-                agent.memory.append((obs, action, reward, safety, next_obs, done))
+                agent.memory.append(experience_tuple(obs, action, reward, safety, next_obs, done))
                 counter.count_dangerous(next_obs)
         else:
             if obs_filter(obs):
-                agent.memory.append((obs, action, reward, safety, obs, done))
+                agent.memory.append(experience_tuple(obs, action, reward, safety, obs, done))
         logger.log('memory_append')
         episode_steps += 1
         episode_reward += reward
