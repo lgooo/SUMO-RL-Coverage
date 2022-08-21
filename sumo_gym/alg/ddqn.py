@@ -7,7 +7,7 @@ import math
 import numpy as np
 from util import Deque
 from logger import Logger
-from alg.alg import Alg
+from alg.alg_base import Alg
 
 
 class MLP(nn.Module):

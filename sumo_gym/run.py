@@ -5,7 +5,7 @@ import argparse
 from sumo_gym import SumoGym
 import numpy as np
 import yaml
-from alg.alg import Alg
+from alg.alg_base import Alg
 from tensorboardX import SummaryWriter
 import os
 import sys

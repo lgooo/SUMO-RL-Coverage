@@ -18,6 +18,12 @@ class Alg:
             num_actions = config.get('num_actions', 5)
             return SafeDDQN(num_states, num_actions, config)
 
+        if config['name'] == 'coptidice':
+            from alg.coptidice import COptiDICE
+            num_states = config.get('num_states', 35)
+            num_actions = config.get('num_actions', 5)
+            return COptiDICE(num_states, num_actions, config)
+
 
     def set_seed(self, seed):
         if seed is not None:
