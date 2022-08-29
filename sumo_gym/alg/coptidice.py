@@ -144,6 +144,13 @@ class COptiDICE(Alg):
 
         loss = nu_loss + lamb_loss + chi_tau_loss
 
+        # policy loss
+
+        p = self.policy_network(s).gather(1, a[:, None]).flatten()
+
+        policy_loss = -torch.mean(w.detach() * torch.log(p))
+
+
 
 if __name__ == '__main__':
     a = COptiDICE(2, 2, {})
