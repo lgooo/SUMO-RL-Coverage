@@ -6,14 +6,14 @@ from sumo_gym import SumoGym
 import numpy as np
 import yaml
 from alg.alg_base import Alg
-import pandas as pd
 import os
+import json
 
 Observation = np.ndarray
 Action = np.ndarray
 
 parser = argparse.ArgumentParser(
-    description='SUMO Gym Tester')
+    description='offline data generator')
 parser.add_argument(
     '--config',
     default='config/simple.yaml',
@@ -21,7 +21,7 @@ parser.add_argument(
 parser.add_argument(
     '--num_episodes',
     type=int,
-    default=20,
+    default=500,
     help='number of episodes to run'
 )
 parser.add_argument(
@@ -43,8 +43,9 @@ parser.add_argument(
 )
 parser.add_argument(
     '--model_path',
-    default='./data/simple_20220824195858',
-    help='path of the model checkpoints'
+    default=None,
+    required=True,
+    help="path of the model checkpoints, e.g. './data/{experiment_name}'"
 )
 args = parser.parse_args()
 
@@ -62,36 +63,27 @@ agent = Alg.create(conf['alg'])
 if args.seed is not None:
     agent.set_seed(args.seed)
 
-def obs_filter(obs:Observation):
-    if len(obs):
-        if obs.max()>1e3:
-            print(obs.max())
-            return False
-        elif obs.min()<-1e3:
-            print(obs.min())
-            return False
-        else:
-            return True
-    return False
 
 def policy(obs: Observation) -> Action:
     return agent.choose_action(obs)
+
+
 # list of model checkpoints
-model_names = os.listdir(os.path.join(args.model_path,'model'))
+model_names = os.listdir(os.path.join(args.model_path, 'model'))
 model_names = [m for m in model_names if m.split(".")[1] == "pth"]
-to_path = os.path.join(args.model_path,'data')
+to_path = os.path.join(args.model_path, 'data')
 if not os.path.exists(to_path):
     os.makedirs(to_path)
 
 for model_name in model_names:
-    model_path = os.path.join(args.model_path,'model',model_name)
+    model_path = os.path.join(args.model_path, 'model', model_name)
     agent.load(model_path)
     # no e-greedy
     agent.epsilon_start = 0
     agent.epsilon_end = 0
     num_crashes = 0
     num_out_of_roads = 0
-    all_obs,all_next_obs, all_reward, all_safety, all_terminate, all_done, all_info,all_ID, all_timestep = [],[],[],[],[],[],[],[],[]
+    all_obs, all_next_obs, all_reward, all_safety, all_terminate, all_done, all_info, all_ID, all_timestep = [], [], [], [], [], [], [], [], []
     for ID in range(args.num_episodes):
         obs = env.reset()
         terminate = False
@@ -107,9 +99,9 @@ for model_name in model_names:
             else:
                 all_obs.append(obs)
                 if not done:
-                        all_next_obs.append(next_obs)
+                    all_next_obs.append(next_obs)
                 else:
-                        all_next_obs.append(obs)
+                    all_next_obs.append(obs)
                 all_reward.append(reward)
                 all_safety.append(safety)
                 all_terminate.append(terminate)
@@ -125,6 +117,15 @@ for model_name in model_names:
                 obs = next_obs
         env.close()
     print(num_crashes / args.num_episodes)
-    results = pd.DataFrame(data={'ID':all_ID,'timestep':all_timestep,'obs':all_obs,'next_obs':all_next_obs,'reward':all_reward, 'safety':all_safety,'terminate':all_terminate,'done': all_done, 'info': all_info })
-    results_path = os.path.join(to_path,model_name.split('.')[0] + '.csv')
-    results.to_csv(results_path)
+
+    results_path = os.path.join(to_path, model_name.split('.')[0] + '.txt')
+    with open(results_path, 'w') as f:
+        print('\t'.join(['ID', 'timestep', 'obs', 'next_obs', 'reward', 'safety', 'terminate', 'done', 'info']), file=f)
+        num_row = len(all_ID)
+        for i in range(num_row):
+            print('\t'.join([json.dumps(all_ID[i]), json.dumps(all_timestep[i]),
+                             json.dumps(all_obs[i].tolist()), json.dumps(all_next_obs[i].tolist()),
+                             json.dumps(all_reward[i]), json.dumps(all_safety[i]),
+                             json.dumps(all_terminate[i]), json.dumps(all_done[i]),
+                             json.dumps(all_info[i])]), file=f)
+    f.close()
