@@ -4,6 +4,7 @@ import math
 from collections import namedtuple
 import numpy as np
 import pickle
+import json
 
 Experience = namedtuple(
     'Experience',
