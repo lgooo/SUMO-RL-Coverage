@@ -5,6 +5,11 @@ from collections import namedtuple
 import numpy as np
 import pickle
 
+Experience = namedtuple(
+    'Experience',
+    ['obs', 'action', 'reward', 'safety', 'next_obs', 'done'],
+)
+
 def add_sumo_path():
     if "SUMO_HOME" in os.environ:
         sumo_path = os.path.join(os.environ["SUMO_HOME"], "tools")
@@ -209,3 +214,42 @@ class Deque:
 
 
         return samples
+
+
+def load_offline_data(file_path, capacity=1000000):
+    """
+    Columns are
+    - ID : ID of trajectory (integer)
+    - timestep : timestemp within trajectory (integer)
+    - obs : state observations (json string of nested lists of numbers)
+    - next_obs : state observations (json string of nested lists of numbers)
+    - reward : numeric
+    - safety : json string of dictionary of safety related signals
+    - terminate : boolean (true or false)
+    - done : boolean (trune or false)
+    - info : json string of dictionary of other info
+    """
+    replay = Deque(capacity=capacity)
+    f = open(file_path, 'r')
+    f.readline() # skip header
+    for line in f:
+        (
+            _, _, obs, next_obs, reward, safety,
+            terminate, done, _
+        ) = line.rstrip('\n').split('\t')
+        obs = np.array(json.loads(obs))
+        next_obs = np.array(json.loads(next_obs))
+        reward = float(reward)
+        safety = json.loads(safety)
+        terminate = 1 if terminate == 'true' else 0
+        done = 1 if done == 'true' else 0
+        replay.append(Experience(
+            obs=obs,
+            action=1, # TODO: fix after Yuhang's fix
+            reward=reward,
+            safety=safety,
+            next_obs=next_obs,
+            done=done,
+        ))
+    f.close()
+    return replay
