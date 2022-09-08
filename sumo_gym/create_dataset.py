@@ -14,7 +14,7 @@ parser.add_argument(
     '--beta',
     type=float,
     default=0.8,
-    help='propotion of safe samples',
+    help='proportion of safe samples',
 )
 parser.add_argument(
     '--root',
@@ -81,10 +81,11 @@ if not os.path.exists('./data/dataset/'):
     os.mkdir('./data/dataset/')
 
 with open('./data/dataset/beta{}.txt'.format(int(beta * 100)), 'w') as f:
-    print('\t'.join(['ID', 'timestep', 'obs', 'next_obs', 'reward', 'safety', 'terminate', 'done', 'info']), file=f)
+    print('\t'.join(['ID', 'timestep', 'obs', 'next_obs','action', 'reward', 'safety', 'terminate', 'done', 'info']), file=f)
     for index, row in final_dataset.iterrows():
         print('\t'.join([json.dumps(row['ID']), json.dumps(row['timestep']),
                          json.dumps(row['obs']), json.dumps(row['next_obs']),
+                         json.dumps(row['action']),
                          json.dumps(row['reward']), json.dumps(row['safety']),
                          json.dumps(row['terminate']), json.dumps(row['done']),
                          json.dumps(row['info'])]), file=f)

@@ -43,8 +43,8 @@ parser.add_argument(
 )
 parser.add_argument(
     '--model_path',
-    default=None,
-    required=True,
+    default='./data/simple_20220824195858/',
+    required=False,
     help="path of the model checkpoints, e.g. './data/{experiment_name}'"
 )
 args = parser.parse_args()
@@ -83,7 +83,7 @@ for model_name in model_names:
     agent.epsilon_end = 0
     num_crashes = 0
     num_out_of_roads = 0
-    all_obs, all_next_obs, all_reward, all_safety, all_terminate, all_done, all_info, all_ID, all_timestep = [], [], [], [], [], [], [], [], []
+    all_obs, all_next_obs,all_actions, all_reward, all_safety, all_terminate, all_done, all_info, all_ID, all_timestep = [], [], [], [], [], [], [], [], [],[]
     for ID in range(args.num_episodes):
         obs = env.reset()
         terminate = False
@@ -103,6 +103,7 @@ for model_name in model_names:
                 else:
                     all_next_obs.append(obs)
                 all_reward.append(reward)
+                all_actions.append(action)
                 all_safety.append(safety)
                 all_terminate.append(terminate)
                 all_done.append(done)
@@ -120,11 +121,12 @@ for model_name in model_names:
 
     results_path = os.path.join(to_path, model_name.split('.')[0] + '.txt')
     with open(results_path, 'w') as f:
-        print('\t'.join(['ID', 'timestep', 'obs', 'next_obs', 'reward', 'safety', 'terminate', 'done', 'info']), file=f)
+        print('\t'.join(['ID', 'timestep', 'obs', 'next_obs','action', 'reward', 'safety', 'terminate', 'done', 'info']), file=f)
         num_row = len(all_ID)
         for i in range(num_row):
             print('\t'.join([json.dumps(all_ID[i]), json.dumps(all_timestep[i]),
                              json.dumps(all_obs[i].tolist()), json.dumps(all_next_obs[i].tolist()),
+                             json.dumps(all_actions[i]),
                              json.dumps(all_reward[i]), json.dumps(all_safety[i]),
                              json.dumps(all_terminate[i]), json.dumps(all_done[i]),
                              json.dumps(all_info[i])]), file=f)
