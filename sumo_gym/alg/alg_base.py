@@ -3,6 +3,10 @@ import random
 import torch
 
 class Alg:
+    def __init__(self):
+        self.device = torch.device(
+            'cuda' if torch.cuda.is_available() else 'cpu')
+
     @staticmethod
     def create(config):
         # TODO: proper implementation of factory

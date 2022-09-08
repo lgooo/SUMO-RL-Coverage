@@ -28,9 +28,10 @@ class MLP(nn.Module):
 
 class DDQN(Alg):
     def __init__(self, n_states, n_actions, config):
+        super(DDQN, self).__init__()
+
         self.config = config
         self.n_actions = n_actions
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.gamma = config.get('gamma',0.99)
         # epsilon-greedy
         self.frame_idx = 0

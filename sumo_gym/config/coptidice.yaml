@@ -1,0 +1,20 @@
+env:
+    sumo_config: sumo/simple.sumocfg
+    speed_limit: 30
+    vehicle_speed_mean: 25
+    vehicle_speed_variation: 2
+    num_random_vehicles: 20
+    vehicle_time_gap: 2.0
+    goal:
+        x: 800
+    reward:
+        goal_bonus: 0
+        off_lane_penalty_factor: 1
+        speed_penalty_factor: 1
+        acceleration_penalty_factor: 1
+        lateral_speed_penalty_factor: 3
+        alive_bonus: 8
+        safety_penalty: 0
+alg:
+    name: coptidice
+    offline_data: beta80.txt
