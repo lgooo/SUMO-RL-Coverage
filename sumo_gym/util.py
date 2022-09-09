@@ -8,7 +8,7 @@ import json
 
 Experience = namedtuple(
     'Experience',
-    ['obs', 'action', 'reward', 'safety', 'next_obs', 'done'],
+    ['initial_state', 'obs', 'action', 'reward', 'safety', 'next_obs', 'done'],
 )
 
 def add_sumo_path():
@@ -181,10 +181,16 @@ class Deque:
             self._size += 1
         self._end = (self._end + 1) % self.capacity
 
-    def sample(self, batch_size):
+    # TODO: hack to recover clean interface.
+    def single_sample(self, batch_size):
         assert self._size >= batch_size
         indices = np.random.choice(self._size, batch_size, replace=False)
 
+        return [self.__getitem__(index) for index in indices]
+
+    def sample(self, batch_size):
+        assert self._size >= batch_size
+        indices = np.random.choice(self._size, batch_size, replace=False)
         samples=[self.__getitem__(index) for index in indices]
 
         obs=[]
@@ -222,8 +228,10 @@ def load_offline_data(file_path, capacity=1000000):
     Columns are
     - ID : ID of trajectory (integer)
     - timestep : timestemp within trajectory (integer)
+    - initial_state : initial state (json string of nested lists of numbers)
     - obs : state observations (json string of nested lists of numbers)
     - next_obs : state observations (json string of nested lists of numbers)
+    - action : integer
     - reward : numeric
     - safety : json string of dictionary of safety related signals
     - terminate : boolean (true or false)
@@ -235,18 +243,21 @@ def load_offline_data(file_path, capacity=1000000):
     f.readline() # skip header
     for line in f:
         (
-            _, _, obs, next_obs, reward, safety,
-            terminate, done, _
+            _, _, initial_state, obs, next_obs,
+            action, reward, safety, terminate, done, _
         ) = line.rstrip('\n').split('\t')
+        initial_state = np.array(json.loads(initial_state.strip('"')))
         obs = np.array(json.loads(obs))
         next_obs = np.array(json.loads(next_obs))
+        action = int(action)
         reward = float(reward)
         safety = json.loads(safety)
         terminate = 1 if terminate == 'true' else 0
         done = 1 if done == 'true' else 0
         replay.append(Experience(
+            initial_state=initial_state,
             obs=obs,
-            action=1, # TODO: fix after Yuhang's fix
+            action=action,
             reward=reward,
             safety=safety,
             next_obs=next_obs,

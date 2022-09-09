@@ -20,18 +20,20 @@ class MLP(nn.Module):
         else:
             self.final_activation = None
         dimensions = [input_dim] + hidden_dims + [output_dim]
-        self.layers = [
-            nn.Linear(dimensions[i], dimensions[i + 1])
-            for i in range(len(dimensions) - 1)
-        ]
+        layers = []
+        for i in range(len(dimensions) - 1):
+            layers.append(
+                nn.Linear(dimensions[i], dimensions[i + 1])
+            )
+            layers.append(nn.ReLU())
+        self.layers = nn.Sequential(*(layers[:-1]))
 
     def forward(self, x):
         x = torch.flatten(x, start_dim=1)
-        for layer in self.layers[:-1]:
-            x = F.relu(layer(x))
+        x = self.layers(x)
         if self.final_activation is not None:
-            return self.final_activation(self.layers[-1](x))
-        return self.layers[-1](x)
+            return self.final_activation(x)
+        return x
 
 
 class COptiDICE(Alg):
@@ -43,7 +45,7 @@ class COptiDICE(Alg):
 
         self.gamma = config.get('gamma', 0.95)
         self.alpha = config.get('alpha', 1)
-        self.batch_size = config.get('batch_size', 7)
+        self.batch_size = config.get('batch_size', 1024)
         self.f_type = config.get('f_type', 'kl')
         self.num_costs = config.get('num_costs', 2) # TODO: this is hacky
         self.c_hats = torch.ones(self.num_costs) * config.get('cost_thresholds', 1)
@@ -57,6 +59,24 @@ class COptiDICE(Alg):
         self.tau = torch.zeros(self.num_costs, requires_grad=True)
 
         self.memory = load_offline_data(config['offline_data'], capacity=int(1e6))
+
+        self.lr=config.get('lr', 0.00005)
+        self.optimizer = optim.Adam(
+            [
+                {'params': self.nu_network.parameters()},
+                {'params': self.chi_network.parameters()},
+            ],
+            lr=self.lr,
+            weight_decay=config.get('weight_decay', 0),
+        )
+        self.policy_optimizer = optim.Adam(
+            [
+                {'params': self.policy_network.parameters()},
+            ],
+            lr=self.lr,
+            weight_decay=config.get('weight_decay', 0),
+        )
+
 
     def f(self, x):
         if self.f_type == 'chisquare':
@@ -87,8 +107,9 @@ class COptiDICE(Alg):
         raise NotImplementedError('undefined f_type', self.f_type)
 
     def update(self):
-        s, a, r, c, s_next, dones = self.memory.sample(self.batch_size)
-        s_0 = s # TODO: hack since we don't log s_0 yet.
+        s0, s, a, r, c, s_next, dones = list(zip(
+            *self.memory.single_sample(self.batch_size)
+        ))
         n = len(a)
 
         s = torch.tensor(np.array(s), device=self.device, dtype=torch.float)
@@ -99,14 +120,14 @@ class COptiDICE(Alg):
         c = torch.tensor(np.array(c), device=self.device, dtype=torch.float)
         s_next = torch.tensor(np.array(s_next), device=self.device, dtype=torch.float)
         dones = torch.tensor(dones, device=self.device, dtype=torch.float)
-        s_0 = torch.tensor(np.array(s_0), device=self.device, dtype=torch.float)
+        s0 = torch.tensor(np.array(s0), device=self.device, dtype=torch.float)
 
         gamma = self.gamma
         alpha = self.alpha
 
         nu = self.nu_network(s)
         nu_next = self.nu_network(s_next)
-        nu_0 = self.nu_network(s_0)
+        nu_0 = self.nu_network(s0)
 
         lamb = torch.clip(torch.exp(self.lamb), 0, 1e3)
         chi = self.chi_network(s)
@@ -127,7 +148,7 @@ class COptiDICE(Alg):
         )
 
         # chi tau loss
-        chi_0 = self.chi_network(s_0)
+        chi_0 = self.chi_network(s0)
         chi = self.chi_network(s)
         chi_next = self.chi_network(s_next)
 
@@ -160,11 +181,38 @@ class COptiDICE(Alg):
 
         loss = nu_loss + lamb_loss + chi_tau_loss
 
+        self.optimizer.zero_grad()
+        loss.backward()
+        for param in self.chi_network.parameters():
+            param.grad.data.clamp_(-1, 1)
+        for param in self.nu_network.parameters():
+            param.grad.data.clamp_(-1, 1)
+        self.optimizer.step()
+
         # policy loss
 
         p = self.policy_network(s).gather(1, a).flatten()
         policy_loss = -torch.mean(w.detach() * torch.log(p))
 
+        self.policy_optimizer.zero_grad()
+        policy_loss.backward()
+        for param in self.policy_network.parameters():
+            param.grad.data.clamp_(-1, 1)
+        self.policy_optimizer.step()
+
+        return loss.item()
+
+    def log_tensorboard(self, writer, epi):
+        pass
+
+    def save(self, path):
+        torch.save(self.policy_network.state_dict(), path)
+
+    def get_norm(self):
+        total = 0
+        for param in self.nu_network.parameters():
+            total += param.norm().item() ** 2
+        return np.sqrt(total)
 
 if __name__ == '__main__':
     import yaml
