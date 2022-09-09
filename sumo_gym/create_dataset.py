@@ -2,6 +2,7 @@ import argparse
 import os
 import pandas as pd
 import json
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser(
     description='offline dataset generator')
@@ -81,9 +82,11 @@ if not os.path.exists('./data/dataset/'):
     os.mkdir('./data/dataset/')
 
 with open('./data/dataset/beta{}.txt'.format(int(beta * 100)), 'w') as f:
-    print('\t'.join(['ID', 'timestep', 'obs', 'next_obs','action', 'reward', 'safety', 'terminate', 'done', 'info']), file=f)
+    print('\t'.join(['ID', 'timestep', 'initial_state', 'obs', 'next_obs', 'action', 'reward', 'safety', 'terminate',
+                     'done', 'info']), file=f)
     for index, row in final_dataset.iterrows():
         print('\t'.join([json.dumps(row['ID']), json.dumps(row['timestep']),
+                         json.dumps(row['initial_state']),
                          json.dumps(row['obs']), json.dumps(row['next_obs']),
                          json.dumps(row['action']),
                          json.dumps(row['reward']), json.dumps(row['safety']),

@@ -43,8 +43,8 @@ parser.add_argument(
 )
 parser.add_argument(
     '--model_path',
-    default='./data/simple_20220824195858/',
-    required=False,
+    default='',
+    required=True,
     help="path of the model checkpoints, e.g. './data/{experiment_name}'"
 )
 args = parser.parse_args()
@@ -121,10 +121,15 @@ for model_name in model_names:
 
     results_path = os.path.join(to_path, model_name.split('.')[0] + '.txt')
     with open(results_path, 'w') as f:
-        print('\t'.join(['ID', 'timestep', 'obs', 'next_obs','action', 'reward', 'safety', 'terminate', 'done', 'info']), file=f)
+        print('\t'.join(['ID', 'timestep', 'initial_state', 'obs', 'next_obs','action', 'reward', 'safety', 'terminate',
+                         'done', 'info']), file=f)
         num_row = len(all_ID)
+        initial_state=all_obs[0]
         for i in range(num_row):
+            if all_timestep[i]==0:
+                initial_state=all_obs[i]
             print('\t'.join([json.dumps(all_ID[i]), json.dumps(all_timestep[i]),
+                             json.dumps(initial_state.tolist()),
                              json.dumps(all_obs[i].tolist()), json.dumps(all_next_obs[i].tolist()),
                              json.dumps(all_actions[i]),
                              json.dumps(all_reward[i]), json.dumps(all_safety[i]),
