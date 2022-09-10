@@ -6,6 +6,7 @@ import random
 import math
 import numpy as np
 from util import Deque
+from util import Experience
 from logger import Logger
 from alg.alg_base import Alg
 
@@ -64,8 +65,10 @@ class DDQN(Alg):
             )
         else:
             raise Exception(f'Unsupported optimizer: {optimizer_name}')
-        self.memory = Deque(capacity=int(self.memory_size), multi_steps=self.multi_steps)
+        self.memory = Deque(capacity=int(self.memory_size))
         self.logger = None
+        if self.multi_steps > 1:
+            self.short_memory = Deque(capacity=self.multi_steps)
 
 
     def continuous_action(self, act):
@@ -135,7 +138,18 @@ class DDQN(Alg):
         if len(self.memory) < self.batch_size:
             return None
 
-        states, actions, rewards, safety_data, next_states, dones = self.memory.sample(self.batch_size)
+        experiences = self.memory.sample(self.batch_size)
+        extract_fields = lambda experience: (
+            experience.obs,
+            experience.action,
+            experience.reward,
+            experience.safety,
+            experience.next_obs,
+            experience.done,
+        )
+        states, actions, rewards, safety_data, next_states, dones = \
+            list(zip(*map(extract_fields, experiences)))
+
         self.log('memory_sample')
         safety_batches = {}
         for k in safety_data[0].keys():
@@ -195,3 +209,28 @@ class DDQN(Alg):
 
     def log_tensorboard(self, writer, epi):
         pass
+
+    def observe(self, experience: Experience):
+        if self.multi_steps == 1:
+            self.memory.append(experience)
+        else:
+            self.short_memory.append(experience)
+            if len(self.short_memory) >= self.multi_steps:
+                past_experience = self.short_memory[-self.multi_steps]
+                new_experience = Experience(
+                    initial_state=past_experience.initial_state,
+                    obs=past_experience.obs,
+                    action=past_experience.action,
+                    reward=sum([
+                        (self.gamma ** n) * self.short_memory[-(self.multi_steps - n)].reward
+                        for n in range(self.multi_steps)
+                    ]),
+                    safety=past_experience.safety, # TODO: discounted sum for safety signals
+                    next_obs=experience.next_obs,
+                    done=experience.done,
+                )
+                self.memory.append(new_experience)
+
+    def new_episode(self):
+        if self.multi_steps > 1:
+            self.short_memory.clear()

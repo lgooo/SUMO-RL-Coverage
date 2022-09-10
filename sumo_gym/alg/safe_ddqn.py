@@ -100,3 +100,6 @@ class SafeDDQN(DDQN):
     def log_tensorboard(self, writer, epi):
         for k, v in self.safety_lambdas.items():
             writer.add_scalar(f'data/lambda_{k}', v, epi)
+
+    def observe(self, experience: Experience):
+        self.memory.append(experience)

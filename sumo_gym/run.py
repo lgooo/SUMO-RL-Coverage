@@ -15,6 +15,7 @@ from logger import Logger
 from collections import defaultdict
 from collections import namedtuple
 import util
+from util import Experience
 
 Observation = np.ndarray
 Action = np.ndarray
@@ -113,6 +114,8 @@ counter=util.dangerous_pair_counter()
 
 for epi in range(args.num_episodes):
     obs = env.reset()
+    agent.new_episode()
+    initial_state = obs.copy()
     terminate = False
     episode_reward = 0
     episode_steps = 0
@@ -134,11 +137,11 @@ for epi in range(args.num_episodes):
         logger.log('environment_step')
         if not done:
             if obs_filter(next_obs):
-                agent.memory.append(experience_tuple(obs, action, reward, safety, next_obs, done))
+                agent.observe(Experience(initial_state, obs, action, reward, safety, next_obs, done))
                 counter.count_dangerous(next_obs)
         else:
             if obs_filter(obs):
-                agent.memory.append(experience_tuple(obs, action, reward, safety, obs, done))
+                agent.observe(Experience(initial_state, obs, action, reward, safety, obs, done))
         logger.log('memory_append')
         episode_steps += 1
         episode_reward += reward

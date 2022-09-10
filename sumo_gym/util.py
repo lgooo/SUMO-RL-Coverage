@@ -153,10 +153,8 @@ class dangerous_pair_counter:
 
 
 class Deque:
-    def __init__(self, capacity, multi_steps=1):
+    def __init__(self, capacity):
         self.capacity = capacity
-        self.gamma = 0.99
-        self.multi_steps = multi_steps
         self._buffer = [None] * capacity
         self._end = 0
         self._start = 0
@@ -166,12 +164,18 @@ class Deque:
         return self._size
 
     def __setitem__(self, index, data):
-        assert index < self._size
+        assert index < self._size and index >= -self._size
         self._buffer[(index + self._start) % self.capacity] = data
 
     def __getitem__(self, index):
-        assert index < self._size
+        assert index < self._size and index >= -self._size
         return self._buffer[(index + self._start) % self.capacity]
+
+    def clear(self):
+        self._buffer = [None] * self.capacity
+        self._end = 0
+        self._start = 0
+        self._size = 0
 
     def append(self, data):
         self._buffer[self._end] = data
@@ -181,46 +185,11 @@ class Deque:
             self._size += 1
         self._end = (self._end + 1) % self.capacity
 
-    # TODO: hack to recover clean interface.
-    def single_sample(self, batch_size):
+    def sample(self, batch_size):
         assert self._size >= batch_size
         indices = np.random.choice(self._size, batch_size, replace=False)
 
         return [self.__getitem__(index) for index in indices]
-
-    def sample(self, batch_size):
-        assert self._size >= batch_size
-        indices = np.random.choice(self._size, batch_size, replace=False)
-        samples=[self.__getitem__(index) for index in indices]
-
-        obs=[]
-        action=[]
-        rewards=[]
-        safety=[]
-        next_obs=[]
-        dones=[]
-
-        for t in samples:
-            obs.append(t.obs)
-            action.append(t.action)
-            rewards.append(t.reward)
-            safety.append(t.safety)
-            next_obs.append(t.next_obs)
-            dones.append(t.done)
-
-        for i in range(batch_size):
-            for n in range(1,self.multi_steps):
-                if indices[i]+n < self._size:
-                    rewards[i] += (self.gamma ** n) * self.__getitem__(indices[i]+n).reward
-                    next_obs[i] = self.__getitem__(indices[i] + n).next_obs
-                    if self.__getitem__(indices[i] + n).done:
-                        dones[i] = True
-                        break
-
-        return obs,action,rewards,safety, next_obs, dones
-
-
-        return samples
 
 
 def load_offline_data(file_path, capacity=1000000):
