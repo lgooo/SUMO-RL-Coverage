@@ -31,7 +31,6 @@ parser.add_argument(
 parser.add_argument(
     '--num_iterations',
     type=int,
-    default=1000,
     help='number of iterations to run'
 )
 parser.add_argument(
