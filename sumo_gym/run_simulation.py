@@ -80,6 +80,13 @@ if not os.path.exists(to_path):
 
 model_path = args.model_path
 model_name = os.path.basename(args.model_path).rsplit('.', 1)[0]
+results_path = os.path.join(to_path, model_name + '.log')
+f = open(results_path, 'w')
+# print header
+print('\t'.join([
+    'ID', 'timestep', 'initial_state', 'obs', 'next_obs',
+    'action', 'reward', 'safety', 'terminate', 'done', 'info',
+]), file=f)
 
 agent.load(model_path)
 # no e-greedy
@@ -87,9 +94,10 @@ agent.epsilon_start = 0
 agent.epsilon_end = 0
 num_crashes = 0
 num_out_of_roads = 0
-all_obs, all_next_obs,all_actions, all_reward, all_safety, all_terminate, all_done, all_info, all_ID, all_timestep = [], [], [], [], [], [], [], [], [],[]
-for ID in range(args.num_episodes):
+for episode_id in range(args.num_episodes):
     obs = env.reset()
+    initial_state = obs.copy()
+
     terminate = False
     episode_reward = 0
     episode_steps = 0
@@ -101,42 +109,29 @@ for ID in range(args.num_episodes):
             print("Error: Answered with error to command 0xa4: Vehicle 'ego' is not known.")
             terminate = True
         else:
-            all_obs.append(obs)
-            if not done:
-                all_next_obs.append(next_obs)
-            else:
-                all_next_obs.append(obs)
-            all_reward.append(reward)
-            all_actions.append(action)
-            all_safety.append(safety)
-            all_terminate.append(terminate)
-            all_done.append(done)
-            all_info.append(info)
-            all_ID.append(ID)
-            all_timestep.append(episode_steps)
+            if done:
+                next_obs = obs
+            print('\t'.join([
+                str(episode_id + 1),
+                str(episode_steps + 1),
+                json.dumps(initial_state.tolist()),
+                json.dumps(obs.tolist()),
+                json.dumps(next_obs.tolist()),
+                str(action),
+                str(reward),
+                json.dumps(safety),
+                '1' if terminate else '0',
+                '1' if done else '0',
+                json.dumps(info)
+            ]), file=f)
             if info.get('crash'):
                 num_crashes += 1
             if info.get('out_of_road'):
                 num_out_of_roads += 1
             episode_steps += 1
+
             obs = next_obs
     env.close()
 print(num_crashes / args.num_episodes)
 
-results_path = os.path.join(to_path, model_name + '.log')
-with open(results_path, 'w') as f:
-    print('\t'.join(['ID', 'timestep', 'initial_state', 'obs', 'next_obs','action', 'reward', 'safety', 'terminate',
-                        'done', 'info']), file=f)
-    num_row = len(all_ID)
-    initial_state=all_obs[0]
-    for i in range(num_row):
-        if all_timestep[i]==0:
-            initial_state=all_obs[i]
-        print('\t'.join([json.dumps(all_ID[i]), json.dumps(all_timestep[i]),
-                            json.dumps(initial_state.tolist()),
-                            json.dumps(all_obs[i].tolist()), json.dumps(all_next_obs[i].tolist()),
-                            json.dumps(all_actions[i]),
-                            json.dumps(all_reward[i]), json.dumps(all_safety[i]),
-                            json.dumps(all_terminate[i]), json.dumps(all_done[i]),
-                            json.dumps(all_info[i])]), file=f)
 f.close()
