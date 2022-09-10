@@ -48,15 +48,15 @@ class COptiDICE(Alg):
         self.batch_size = config.get('batch_size', 1024)
         self.f_type = config.get('f_type', 'kl')
         self.num_costs = config.get('num_costs', 2) # TODO: this is hacky
-        self.c_hats = torch.ones(self.num_costs) * config.get('cost_thresholds', 1)
+        self.c_hats = torch.ones(self.num_costs, device=self.device) * config.get('cost_thresholds', 1)
         self.cost_ub_eps = config.get('cost_ub_epsilon', 0)
 
-        self.nu_network = MLP(n_states, 1, [128, 128])
-        self.chi_network = MLP(n_states, self.num_costs, [128, 128])
-        self.policy_network = MLP(n_states, n_actions, [128, 128], 'softmax')
+        self.nu_network = MLP(n_states, 1, [128, 128]).to(self.device)
+        self.chi_network = MLP(n_states, self.num_costs, [128, 128]).to(self.device)
+        self.policy_network = MLP(n_states, n_actions, [128, 128], 'softmax').to(self.device)
 
-        self.lamb = torch.zeros(self.num_costs, requires_grad=True)
-        self.tau = torch.zeros(self.num_costs, requires_grad=True)
+        self.lamb = torch.zeros(self.num_costs, device=self.device, requires_grad=True)
+        self.tau = torch.zeros(self.num_costs, device=self.device, requires_grad=True)
 
         self.memory = load_offline_data(config['offline_data'], capacity=int(1e6))
 
@@ -108,7 +108,7 @@ class COptiDICE(Alg):
 
     def update(self):
         s0, s, a, r, c, s_next, dones = list(zip(
-            *self.memory.single_sample(self.batch_size)
+            *self.memory.sample(self.batch_size)
         ))
         n = len(a)
 

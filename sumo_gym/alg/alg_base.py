@@ -2,9 +2,8 @@ import numpy as np
 import random
 import torch
 from util import Experience
-from abc import ABC, abstractmethod
 
-class Alg(ABC):
+class Alg:
     def __init__(self):
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
@@ -30,9 +29,8 @@ class Alg(ABC):
             num_actions = config.get('num_actions', 5)
             return COptiDICE(num_states, num_actions, config)
 
-    @abstractmethod
-    def observe(experience: Experience):
-        raise NotImplementedError('observe not implemented.')
+    def observe(self, experience: Experience):
+        pass
 
     def new_epsidoe(self):
         pass
