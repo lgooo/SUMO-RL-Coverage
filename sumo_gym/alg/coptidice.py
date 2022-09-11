@@ -217,8 +217,32 @@ class COptiDICE(Alg):
     def choose_action(self, state):
         with torch.no_grad():
             state = torch.tensor(state, device=self.device, dtype=torch.float32).unsqueeze(dim=0)
-            action_dist = self.policy_network(state)
-            return np.random.choice(5, p=action_dist)
+            p = self.policy_network(state).squeeze().numpy()
+            # hack for getting round rounding error
+            i = np.argmax(p)
+            p[i] = 1 - np.sum([x for j, x in enumerate(p) if i != j])
+            return np.random.choice(5, p=p)
+
+    def continuous_action(self, act):
+        ax = self.config.get('action_x_acc', 2)
+        ay = self.config.get('action_y_acc', 2)
+        action = [0, 0]
+        # move forward
+        if act == 0:
+            action = [0, 0]
+        # accelerate
+        elif act == 1:
+            action = [ax, 0]
+        # brake
+        elif act == 2:
+            action = [-ax, 0]
+        # turn right
+        elif act == 3:
+            action = [0, ay]
+        # turn left
+        elif act == 4:
+            action = [0, -ay]
+        return action
 
     def load(self, path):
         self.policy_network.load_state_dict(
