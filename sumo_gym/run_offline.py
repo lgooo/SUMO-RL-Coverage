@@ -56,7 +56,18 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-with open(args.config, 'r') as f:
+experiment_name = args.experiment
+config_name = args.config.split('/')[-1].rsplit('.', 1)[0]
+if not experiment_name:
+    datestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    experiment_name = f'{config_name}_{datestamp}'
+
+if not os.path.exists(f'data/{experiment_name}/model'):
+    os.makedirs(f'data/{experiment_name}/model')
+
+config_file = f'data/{experiment_name}/{config_name}.yaml'
+shutil.copy(args.config, f'data/{experiment_name}/{config_name}.yaml')
+with open(config_file, 'r') as f:
     conf = yaml.safe_load(f)
 
 if args.data_path:
@@ -70,17 +81,8 @@ def policy(obs: Observation) -> Action:
     return agent.choose_action(obs)
 
 
-experience_tuple = namedtuple('experience','obs action reward safety next_obs done')
-experiment_name = args.experiment
-config_name = args.config.split('/')[-1].rsplit('.', 1)[0]
-if not experiment_name:
-    datestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    experiment_name = f'{config_name}_{datestamp}'
-
-if not os.path.exists(f'data/{experiment_name}/model'):
-    os.makedirs(f'data/{experiment_name}/model')
-
-shutil.copy(args.config, f'data/{experiment_name}/{config_name}.yaml')
+with open(f'data/{experiment_name}/data_path.txt', 'w') as f:
+    print(conf['alg']['offline_data'], file=f)
 
 writer = SummaryWriter(f'runs/{experiment_name}')
 
@@ -97,6 +99,6 @@ for i in range(num_iterations):
     if loss is not None:
         writer.add_scalar('data/loss', loss, (i + 1))
 
-    # save model every 10000 episodes
-    if (i + 1) % 10000 == 0:
+    # save model every 1000 episodes
+    if (i + 1) % 1000 == 0:
         agent.save(f'data/{experiment_name}/model/{i + 1}.pth')

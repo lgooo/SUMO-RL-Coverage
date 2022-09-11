@@ -58,7 +58,8 @@ class COptiDICE(Alg):
         self.lamb = torch.zeros(self.num_costs, device=self.device, requires_grad=True)
         self.tau = torch.zeros(self.num_costs, device=self.device, requires_grad=True)
 
-        self.memory = load_offline_data(config['offline_data'], capacity=int(1e6))
+        if 'offline_data' in config:
+            self.memory = load_offline_data(config['offline_data'], capacity=int(1e6))
 
         self.lr=config.get('lr', 0.00005)
         self.optimizer = optim.Adam(
