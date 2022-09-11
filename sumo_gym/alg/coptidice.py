@@ -214,6 +214,17 @@ class COptiDICE(Alg):
             total += param.norm().item() ** 2
         return np.sqrt(total)
 
+    def choose_action(self, state):
+        with torch.no_grad():
+            state = torch.tensor(state, device=self.device, dtype=torch.float32).unsqueeze(dim=0)
+            action_dist = self.policy_network(state)
+            return np.random.choice(5, p=action_dist)
+
+    def load(self, path):
+        self.policy_network.load_state_dict(
+            torch.load(path, map_location=self.device)
+        )
+
 if __name__ == '__main__':
     import yaml
     with open('config/coptidice.yaml', 'r') as f:
