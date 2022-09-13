@@ -1,0 +1,24 @@
+env:
+    sumo_config: sumo/simple.sumocfg
+    speed_limit: 30
+    vehicle_speed_mean: 25
+    vehicle_speed_variation: 2
+    num_random_vehicles: 20
+    goal:
+        x: 1000
+    reward:
+        goal_bonus: 0
+        off_lane_penalty_factor: 1
+        speed_penalty_factor: 0.5
+        acceleration_penalty_factor: 1
+        alive_bonus: 10
+        safety_penalty: 5
+
+alg:
+    name: crr
+    gamma: 0.99
+    update_freq: 100
+    batch_size: 128
+    lr: 0.0001
+    multi_steps: 3
+
