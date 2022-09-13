@@ -251,7 +251,7 @@ if __name__ == '__main__':
         critic_optimizer.zero_grad()
         loss_critic = nn.MSELoss()(q_values, expect_q_values)
         loss_critic.backward()
-        for param in actor.parameters():
+        for param in critic.parameters():
             param.grad.data.clamp_(-1, 1)
         critic_optimizer.step()
 
