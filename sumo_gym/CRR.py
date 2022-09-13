@@ -58,6 +58,7 @@ env = SumoGym(
 alg_config = conf['alg']
 learning_rate = alg_config['lr']
 gamma = alg_config['gamma']
+beta = alg_config['beta']
 n_updates = args.num_episodes
 target_update_steps = alg_config['update_freq']
 n_states = alg_config.get('n_states', 35)
@@ -170,7 +171,7 @@ def action_matrix(a):
     return actions
 
 
-def function_f(q, pi, s, a):
+def function_f_binary(q, pi, s, a):
     q_value = q(s, action_matrix(a))
     all_actions = np.diag(np.full(n_actions, 1))
     all_actions = torch.tensor(all_actions, device=device, dtype=torch.float)
@@ -183,6 +184,22 @@ def function_f(q, pi, s, a):
     A_mean = q_value - mean_estimate
     return (A_mean > 0)
 
+
+def function_f_exp(q, pi, s, a):
+    q_value = q(s, action_matrix(a))
+    all_actions = np.diag(np.full(n_actions, 1))
+    all_actions = torch.tensor(all_actions, device=device, dtype=torch.float)
+    mean_estimate = []
+    for state in s:
+        state = torch.stack([state] * n_actions)
+        r = q(state, all_actions)
+        mean_estimate.append(torch.mean(r))
+    mean_estimate = torch.stack(mean_estimate, dim=0).unsqueeze(1)
+    A_mean = q_value - mean_estimate
+    return torch.clamp(torch.exp(A_mean / beta), max=20.)
+
+
+function_f = function_f_exp if alg_config['f'] == 'exp' else function_f_binary
 
 if __name__ == '__main__':
     offline_data = load_offline_data("./data/dataset/beta80.txt")
