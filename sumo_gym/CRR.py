@@ -65,6 +65,7 @@ n_states = alg_config.get('n_states', 35)
 n_actions = alg_config.get('n_actions', 5)
 batch_size = alg_config['batch_size']
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+network_width= alg_config.get('network_width', 128)
 
 experiment_name = args.experiment
 config_name = args.config.split('/')[-1].rsplit('.', 1)[0]
@@ -77,11 +78,11 @@ writer = SummaryWriter(f'runs/{experiment_name}')
 class Critic(nn.Module):
     def __init__(self, n_states, n_actions):
         super(Critic, self).__init__()
-        self.fc_a1 = nn.Linear(n_actions, 64)
-        self.fc_s1 = nn.Linear(n_states, 128)
-        self.fc_s2 = nn.Linear(128, 64)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 1)
+        self.fc_a1 = nn.Linear(n_actions, network_width//2)
+        self.fc_s1 = nn.Linear(n_states, network_width)
+        self.fc_s2 = nn.Linear(network_width, network_width//2)
+        self.fc2 = nn.Linear(network_width, network_width//2)
+        self.fc3 = nn.Linear(network_width//2, 1)
 
     def forward(self, state, action):
         a = F.relu(self.fc_a1(action))
@@ -97,10 +98,10 @@ class Critic(nn.Module):
 class Actor(nn.Module):
     def __init__(self, n_states, n_actions):
         super(Actor, self).__init__()
-        self.fc1 = nn.Linear(n_states, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, 128)
-        self.fc4 = nn.Linear(128, n_actions)
+        self.fc1 = nn.Linear(n_states, network_width)
+        self.fc2 = nn.Linear(network_width, network_width)
+        self.fc3 = nn.Linear(network_width, network_width)
+        self.fc4 = nn.Linear(network_width, n_actions)
 
     def forward(self, x):
         x = torch.flatten(x, start_dim=1)
@@ -112,8 +113,8 @@ class Actor(nn.Module):
 
 
 def continuous_action(act):
-    ax = conf.get('action_x_acc', 2)
-    ay = conf.get('action_y_acc', 2)
+    ax = alg_config.get('action_x_acc', 2)
+    ay = alg_config.get('action_y_acc', 2)
     action = [0, 0]
     # move forward
     if act == 0:
@@ -207,6 +208,7 @@ if __name__ == '__main__':
     target_actor = Actor(n_states, n_actions).to(device)
     critic = Critic(n_states, n_actions).to(device)
     target_critic = Critic(n_states, n_actions).to(device)
+
 
     actor_optimizer = optim.Adam(actor.parameters(), lr=learning_rate)
     critic_optimizer = optim.Adam(critic.parameters(), lr=learning_rate)
