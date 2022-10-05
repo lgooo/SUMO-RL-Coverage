@@ -20,7 +20,7 @@ parser.add_argument(
 parser.add_argument(
     '--num_episodes',
     type=int,
-    default=50000,
+    default=10000,
     help='number of episodes to run'
 )
 parser.add_argument(
@@ -123,6 +123,7 @@ class Actor:
             action_softmax = self.take_action(Q_r, Q_c, s_1)
             loss = torch.mean(self.threshold - torch.sum(torch.mul(action_softmax, estimate_constraint), axis=1))
             self.Y -= self.learning_rate * loss
+            return loss
 
 
 def action_to_batch(act, batch_size):
@@ -215,7 +216,7 @@ if __name__ == '__main__':
     Q_constraint_target = Q(n_states, n_action_space).to(device)
 
     reward_optimizer = optim.Adam(Q_reward.parameters(), lr=alg_config['lr'])
-    constraint_optimizer = optim.Adam(Q_constraint.parameters(), lr=alg_config['lr']*10)
+    constraint_optimizer = optim.Adam(Q_constraint.parameters(), lr=alg_config['lr'])
     loss = nn.MSELoss()
 
     hard_update(Q_reward, Q_reward_target)
@@ -248,11 +249,11 @@ if __name__ == '__main__':
         Q_r_prime, Q_c_prime = np.zeros((batch_size, n_actions, 1)), np.zeros((batch_size, n_actions, 1))
         Q_r_prime, Q_c_prime = torch.tensor(Q_r_prime, device=device), torch.tensor(Q_c_prime, device=device)
         for act in range(n_actions):
-            Q_r_prime[:, act, :] = Q_reward_target(state_batch, action_to_batch(act, batch_size))
-            Q_c_prime[:, act, :] = Q_constraint_target(state_batch, action_to_batch(act, batch_size))
+            Q_r_prime[:, act, :] = Q_reward_target(next_state_batch, action_to_batch(act, batch_size))
+            Q_c_prime[:, act, :] = Q_constraint_target(next_state_batch, action_to_batch(act, batch_size))
 
         with torch.no_grad():
-            action_softmax = actor.take_action(Q_reward, Q_constraint, state_batch)
+            action_softmax = actor.take_action(Q_reward, Q_constraint, next_state_batch)
 
         loss_reward = loss(Q_reward(state_batch, action_matrix(action_batch)),
                            reward_batch + (1 - done_batch) * alg_config['gamma'] * torch.sum(
@@ -275,11 +276,12 @@ if __name__ == '__main__':
             param.grad.data.clamp_(-1, 1)
         constraint_optimizer.step()
 
-        actor.update(Q_reward, Q_constraint, initial_state_batch)
+        loss_actor = actor.update(Q_reward, Q_constraint, initial_state_batch)
 
         writer.add_scalar('data/reward loss', loss_reward, n)
         writer.add_scalar('data/constraint loss', loss_constraint, n)
         writer.add_scalar('data/constraint weight', actor.Y, n)
+        writer.add_scalar('data/actor loss', loss_actor, n)
 
         del loss_reward
         del loss_constraint
